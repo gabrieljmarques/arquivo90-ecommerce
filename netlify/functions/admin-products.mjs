@@ -50,7 +50,7 @@ export default async (req, context) => {
     const { name, slug, subtitle, description, price, display_order,
             tipo, modelagem, genero, esporte, subcategoria, cor,
             sku, peso_g, time_ref, ano_ref, tags,
-            meta_title, meta_description,
+            meta_title, meta_description, image_url,
             active, featured } = body;
     if (!name?.trim() || !slug?.trim() || !price)
       return Response.json({ error: 'Nome, slug e preço são obrigatórios' }, { status: 400 });
@@ -77,6 +77,7 @@ export default async (req, context) => {
       tags:             Array.isArray(tags) ? tags : null,
       meta_title:       meta_title?.trim() || null,
       meta_description: meta_description?.trim() || null,
+      image_url:        image_url?.trim() || null,
       active:           active  ?? false,
       featured:         featured ?? false
     }).select().single();
@@ -121,7 +122,7 @@ export default async (req, context) => {
     const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
     if (!before) return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
 
-    const allowed = ['name','slug','sku','subtitle','description','price','display_order','peso_g','tipo','modelagem','genero','esporte','subcategoria','cor','time_ref','ano_ref','tags','meta_title','meta_description','active','featured'];
+    const allowed = ['name','slug','sku','subtitle','description','price','display_order','peso_g','tipo','modelagem','genero','esporte','subcategoria','cor','time_ref','ano_ref','tags','meta_title','meta_description','image_url','active','featured'];
     const updates = Object.fromEntries(
       Object.entries(body).filter(([k]) => allowed.includes(k))
     );

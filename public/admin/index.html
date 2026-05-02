@@ -412,6 +412,16 @@
         </div>
         <div class="field"><label class="label">Tags (separadas por vírgula)</label><input class="input" name="tags" value="${tagsVal}" placeholder="corinthians, paulista, 77"></div>
 
+        <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Imagem</p>
+        <input type="hidden" name="current_image_url" value="${p?.image_url||''}">
+        ${p?.image_url
+          ? `<img src="${p.image_url}" style="width:100%;max-height:220px;object-fit:cover;border:1px solid var(--border);margin-bottom:0.5rem" id="img-preview">`
+          : `<div id="img-preview" style="width:100%;height:120px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;margin-bottom:0.5rem">SEM IMAGEM</div>`}
+        <div class="field">
+          <label class="label">${p?.image_url ? 'Substituir imagem' : 'Upload de imagem'} (JPG/PNG/WEBP)</label>
+          <input class="input" type="file" name="image_file" accept="image/jpeg,image/png,image/webp" style="padding:0.5rem" onchange="previewImg(this)">
+        </div>
+
         <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">SEO</p>
         <div class="field"><label class="label">Meta title</label><input class="input" name="meta_title" value="${p?.meta_title||''}" placeholder="${p?.name||''}"></div>
         <div class="field"><label class="label">Meta description</label><input class="input" name="meta_description" value="${p?.meta_description||''}"></div>
@@ -428,12 +438,31 @@
       </form>`;
   }
 
+  window.previewImg = (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const prev = document.getElementById('img-preview');
+    if (prev) { prev.src = URL.createObjectURL(file); prev.style.cssText = 'width:100%;max-height:220px;object-fit:cover;border:1px solid var(--border);margin-bottom:0.5rem'; }
+  };
+
   document.getElementById('modal-body').addEventListener('submit', async e => {
     if (e.target.id !== 'product-form') return;
     e.preventDefault();
     const f = e.target;
     const id = document.getElementById('modal-title').dataset.id;
     const tagsRaw = f.tags.value.trim();
+
+    // Upload de imagem se selecionada
+    let imageUrl = f.current_image_url.value || null;
+    const imageFile = f.image_file?.files?.[0];
+    if (imageFile) {
+      const ext  = imageFile.name.split('.').pop().toLowerCase();
+      const path = `${f.slug.value || 'produto'}-${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from('product-images').upload(path, imageFile, { upsert: true, contentType: imageFile.type });
+      if (upErr) { alert('Erro ao enviar imagem: ' + upErr.message); return; }
+      imageUrl = sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+    }
+
     const body = {
       name:             f.name.value,
       slug:             f.slug.value,
@@ -454,6 +483,7 @@
       tags:             tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
       meta_title:       f.meta_title.value || null,
       meta_description: f.meta_description.value || null,
+      image_url:        imageUrl,
       active:           f.active.checked,
       featured:         f.featured.checked
     };
