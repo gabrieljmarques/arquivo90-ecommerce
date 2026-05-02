@@ -71,9 +71,9 @@
 
     <!-- Pedidos -->
     <div class="page" id="page-pedidos">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+      <div style="display:flex;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:2rem">
         <h2>Pedidos</h2>
-        <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
           <select class="select" id="filter-status" style="width:auto;padding:0.5rem 0.8rem;font-size:0.8rem">
             <option value="">Todos</option>
             <option value="pending">Pendente</option>
@@ -107,15 +107,28 @@
           <tbody id="products-tbody"><tr><td colspan="5" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
+      <div id="products-pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem"></div>
     </div>
 
     <!-- Estoque -->
     <div class="page" id="page-estoque">
-      <h2 style="margin-bottom:2rem">Estoque</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+        <h2>Estoque</h2>
+        <input class="input" id="stock-search" placeholder="Filtrar por produto..." style="max-width:260px;padding:0.5rem 0.8rem;font-size:0.8rem">
+      </div>
       <div class="admin-card">
         <table class="admin-table">
-          <thead><tr><th>Produto</th><th>Cor</th><th>Tam.</th><th>Disponível</th><th>Reservado</th><th>Total</th><th>Vendidos</th><th></th></tr></thead>
-          <tbody id="stock-tbody"><tr><td colspan="6" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
+          <thead><tr>
+            <th style="cursor:pointer;user-select:none" onclick="sortStock('name')"><span id="sh-name">Produto</span></th>
+            <th>Cor</th>
+            <th>Tam.</th>
+            <th style="cursor:pointer;user-select:none" onclick="sortStock('avail')"><span id="sh-avail">Disponível</span></th>
+            <th style="cursor:pointer;user-select:none" onclick="sortStock('reserved')"><span id="sh-reserved">Reservado</span></th>
+            <th style="cursor:pointer;user-select:none" onclick="sortStock('stock')"><span id="sh-stock">Total</span></th>
+            <th style="cursor:pointer;user-select:none" onclick="sortStock('sold')"><span id="sh-sold">Vendidos</span></th>
+            <th></th>
+          </tr></thead>
+          <tbody id="stock-tbody"><tr><td colspan="8" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -136,7 +149,6 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-  // Busca credenciais públicas do backend — nenhum valor hardcoded no HTML
   const cfg = await fetch('/api/site-config').then(r => r.json());
   const sb  = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
@@ -184,7 +196,6 @@
   });
 
   async function init() {
-    // Processa magic link / recovery token que vem no hash da URL
     const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
     if (hash.access_token) {
       const { data, error } = await sb.auth.setSession({
@@ -205,7 +216,7 @@
 
   function showAdmin() {
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-shell').style.display  = 'grid';
+    document.getElementById('admin-shell').style.display  = 'flex';
     loadDashboard();
     loadOrders();
     loadProducts();
@@ -273,7 +284,7 @@
     const q      = document.getElementById('filter-search')?.value || '';
     try {
       const params = new URLSearchParams({ page, ...(status && { status }), ...(q && { q }) });
-      const { orders, pages, total } = await api(`/admin/orders?${params}`);
+      const { orders, pages } = await api(`/admin/orders?${params}`);
       const tbody = document.getElementById('orders-tbody');
       tbody.innerHTML = orders.map(o => `
         <tr>
@@ -286,9 +297,9 @@
         </tr>`).join('') || '<tr><td colspan="6" style="color:#888;padding:1.5rem">Nenhum pedido encontrado</td></tr>';
 
       const pag = document.getElementById('orders-pagination');
-      pag.innerHTML = Array.from({ length: pages }, (_, i) =>
+      pag.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) =>
         `<button class="btn ${i+1===page?'btn--primary':'btn--ghost'}" style="padding:0.4rem 0.8rem;font-size:0.75rem" onclick="loadOrders(${i+1})">${i+1}</button>`
-      ).join('');
+      ).join('') : '';
     } catch(e) { console.error(e); }
   }
 
@@ -297,7 +308,7 @@
   window.loadOrders = loadOrders;
 
   window.openOrder = async (id) => {
-    const { order } = await api(`/admin/orders/${id}`);
+    const { order } = await api(`/admin/orders?id=${id}`);
     showModal(`Pedido #${id.slice(-8).toUpperCase()}`, `
       <div style="display:grid;gap:0.8rem;margin-bottom:1.5rem;font-size:0.9rem">
         <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
@@ -323,12 +334,12 @@
           <textarea class="textarea" id="o-notes" style="min-height:60px">${order.notes||''}</textarea>
         </div>
         <button class="btn btn--primary" onclick="saveOrder('${id}')">Salvar</button>
-      </div>`);
+      </div>`, id);
   };
 
   window.saveOrder = async (id) => {
     try {
-      await api(`/admin/orders/${id}`, {
+      await api(`/admin/orders?id=${id}`, {
         method: 'PUT',
         body: JSON.stringify({
           status:        document.getElementById('o-status').value,
@@ -344,9 +355,12 @@
   };
 
   // ── PRODUTOS ──────────────────────────────────────────────────────────────
-  async function loadProducts() {
+  let productsPage = 1;
+
+  async function loadProducts(page = 1) {
+    productsPage = page;
     try {
-      const { products } = await api('/admin/products');
+      const { products, pages } = await api(`/admin/products?page=${page}`);
       const tbody = document.getElementById('products-tbody');
       tbody.innerHTML = products.map(p => `
         <tr>
@@ -359,21 +373,27 @@
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem;color:var(--error)" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Ocultar':'Ativar'}</button>
           </div></td>
         </tr>`).join('') || '<tr><td colspan="5" style="color:#888;padding:1.5rem">Nenhum produto</td></tr>';
+
+      const pag = document.getElementById('products-pagination');
+      pag.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) =>
+        `<button class="btn ${i+1===page?'btn--primary':'btn--ghost'}" style="padding:0.4rem 0.8rem;font-size:0.75rem" onclick="loadProducts(${i+1})">${i+1}</button>`
+      ).join('') : '';
     } catch(e) { console.error(e); }
   }
+  window.loadProducts = loadProducts;
 
   document.getElementById('btn-new-product').addEventListener('click', () => {
     showModal('Novo produto', productForm(null));
   });
 
   window.editProduct = async (id) => {
-    const { product } = await api(`/admin/products/${id}`);
+    const { product } = await api(`/admin/products?id=${id}`);
     showModal(`Editar: ${product.name}`, productForm(product), product.id);
   };
 
   window.toggleProduct = async (id, active) => {
-    await api(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify({ active: !active }) });
-    loadProducts();
+    await api(`/admin/products?id=${id}`, { method: 'PUT', body: JSON.stringify({ active: !active }) });
+    loadProducts(productsPage);
   };
 
   function productForm(p) {
@@ -475,7 +495,7 @@
       if (upErr) { alert('Erro ao enviar: ' + upErr.message); return; }
       const url  = sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
       const existing = document.querySelectorAll('#images-list .img-row').length;
-      await api(`/admin/products/${productId}/images`, {
+      await api(`/admin/products?id=${productId}&sub=images`, {
         method: 'POST',
         body: JSON.stringify({ url, type, display_order: existing })
       });
@@ -487,7 +507,7 @@
     if (!confirm('Remover imagem?')) return;
     const productId = document.getElementById('modal-title').dataset.id;
     try {
-      await api(`/admin/products/${productId}/images/${imageId}`, { method: 'DELETE' });
+      await api(`/admin/products?id=${productId}&sub=images&imageId=${imageId}`, { method: 'DELETE' });
       await editProduct(productId);
     } catch(e) { alert(e.message); }
   };
@@ -501,7 +521,7 @@
     const ids = rows.map(r => r.dataset.id);
     [ids[idx], ids[newIdx]] = [ids[newIdx], ids[idx]];
     try {
-      await api(`/admin/products/${productId}/images/reorder`, {
+      await api(`/admin/products?id=${productId}&sub=images&action=reorder`, {
         method: 'PUT',
         body: JSON.stringify({ order: ids.map((id, i) => ({ id, display_order: i })) })
       });
@@ -542,74 +562,122 @@
     };
     try {
       if (id) {
-        await api(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+        await api(`/admin/products?id=${id}`, { method: 'PUT', body: JSON.stringify(body) });
       } else {
         await api('/admin/products', { method: 'POST', body: JSON.stringify(body) });
       }
       closeModal();
-      loadProducts();
+      loadProducts(productsPage);
     } catch(err) { alert(err.message); }
   });
 
   // ── ESTOQUE ───────────────────────────────────────────────────────────────
   const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
 
+  let stockData       = [];
+  let stockSort       = { col: 'name', asc: true };
+  let stockSearchVal  = '';
+
+  const STOCK_COL_LABELS = { name: 'Produto', avail: 'Disponível', reserved: 'Reservado', stock: 'Total', sold: 'Vendidos' };
+
+  function updateSortHeaders() {
+    Object.keys(STOCK_COL_LABELS).forEach(c => {
+      const el = document.getElementById('sh-' + c);
+      if (el) el.textContent = STOCK_COL_LABELS[c] + (stockSort.col === c ? (stockSort.asc ? ' ↑' : ' ↓') : '');
+    });
+  }
+
   async function loadStock() {
     try {
       const { stock } = await api('/admin/stock');
       document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
+      stockData = stock;
+      renderStock();
+    } catch(e) { console.error(e); }
+  }
 
-      // grouped[productName] = { colors: { colorKey: [sizeEntries] }, totalCount }
-      // colorKey: actual color string, or '_' for null
-      const grouped = {};
-      const productOrder = [];
-      stock.forEach(s => {
-        const name = s.products.name;
-        if (!grouped[name]) { grouped[name] = { colors: {}, colorOrder: [], totalCount: 0 }; productOrder.push(name); }
-        const colorKey = s.color || '_';
-        if (!grouped[name].colors[colorKey]) { grouped[name].colors[colorKey] = []; grouped[name].colorOrder.push(colorKey); }
-        grouped[name].colors[colorKey].push(s);
-        grouped[name].totalCount++;
-      });
-      // Sort sizes within each color group
-      Object.values(grouped).forEach(g => {
-        Object.values(g.colors).forEach(arr =>
-          arr.sort((a,b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size))
-        );
-      });
+  window.sortStock = (col) => {
+    if (stockSort.col === col) stockSort.asc = !stockSort.asc;
+    else { stockSort.col = col; stockSort.asc = true; }
+    updateSortHeaders();
+    renderStock();
+  };
 
-      const tbody = document.getElementById('stock-tbody');
-      const rows = [];
-      productOrder.forEach(name => {
-        const g = grouped[name];
-        let productCellRendered = false;
-        g.colorOrder.forEach(colorKey => {
-          const colorSizes = g.colors[colorKey];
-          const colorLabel = colorKey === '_' ? null : colorKey;
-          colorSizes.forEach((s, ci) => {
-            const avail = Math.max(0, s.stock - s.reserved);
-            const isLastInColor = ci === colorSizes.length - 1;
-            const borderBottom = isLastInColor ? '' : 'border-bottom:1px solid var(--surface);';
-            rows.push(`<tr>
-              ${!productCellRendered
-                ? `<td rowspan="${g.totalCount}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">${name}</td>`
-                : ''}
-              ${ci === 0
-                ? `<td rowspan="${colorSizes.length}" style="font-size:0.8rem;vertical-align:middle;border-right:1px solid var(--border);${isLastInColor?'':'border-bottom:1px solid var(--surface);'}">${colorLabel ? colorLabel : '<span style="color:var(--ink-faint)">—</span>'}</td>`
-                : ''}
-              <td style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;${borderBottom}">${s.size}</td>
-              <td style="${borderBottom}${avail===0?'color:var(--ink-faint)':''}">${avail}</td>
-              <td style="${borderBottom}${s.reserved>0?'color:var(--error);font-weight:600':'color:var(--ink-mid)'}">${s.reserved}</td>
-              <td style="${borderBottom}color:var(--ink-mid)">${s.stock}</td>
-              <td style="${borderBottom}${s.sold>0?'':'color:var(--ink-faint)'}">${s.sold}</td>
-              <td style="${borderBottom}"><button class="btn btn--ghost" style="padding:0.25rem 0.6rem;font-size:0.65rem" onclick="editStock('${s.id}','${name}','${s.size}',${s.stock})">Ajustar</button></td>
-            </tr>`);
-            productCellRendered = true;
-          });
+  document.getElementById('stock-search').addEventListener('input', e => {
+    stockSearchVal = e.target.value.toLowerCase().trim();
+    renderStock();
+  });
+
+  function renderStock() {
+    const filtered = stockSearchVal
+      ? stockData.filter(s => s.products.name.toLowerCase().includes(stockSearchVal))
+      : stockData;
+
+    const grouped = {};
+    const productOrder = [];
+    filtered.forEach(s => {
+      const name = s.products.name;
+      if (!grouped[name]) {
+        grouped[name] = { colors: {}, colorOrder: [], totals: { avail: 0, reserved: 0, stock: 0, sold: 0 } };
+        productOrder.push(name);
+      }
+      const colorKey = s.color || '_';
+      if (!grouped[name].colors[colorKey]) { grouped[name].colors[colorKey] = []; grouped[name].colorOrder.push(colorKey); }
+      grouped[name].colors[colorKey].push(s);
+      grouped[name].totals.avail    += Math.max(0, s.stock - s.reserved);
+      grouped[name].totals.reserved += s.reserved;
+      grouped[name].totals.stock    += s.stock;
+      grouped[name].totals.sold     += (s.sold || 0);
+    });
+
+    productOrder.sort((a, b) => {
+      const ga = grouped[a], gb = grouped[b];
+      let va, vb;
+      if (stockSort.col === 'name') { va = a.toLowerCase(); vb = b.toLowerCase(); }
+      else { va = ga.totals[stockSort.col]; vb = gb.totals[stockSort.col]; }
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return stockSort.asc ? cmp : -cmp;
+    });
+
+    Object.values(grouped).forEach(g => {
+      Object.values(g.colors).forEach(arr =>
+        arr.sort((a,b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size))
+      );
+      g.totalCount = Object.values(g.colors).reduce((s, arr) => s + arr.length, 0);
+    });
+
+    const tbody = document.getElementById('stock-tbody');
+    const rows = [];
+    productOrder.forEach(name => {
+      const g = grouped[name];
+      let productCellRendered = false;
+      g.colorOrder.forEach(colorKey => {
+        const colorSizes = g.colors[colorKey];
+        const colorLabel = colorKey === '_' ? null : colorKey;
+        colorSizes.forEach((s, ci) => {
+          const avail = Math.max(0, s.stock - s.reserved);
+          const isLastInColor = ci === colorSizes.length - 1;
+          const borderBottom = isLastInColor ? '' : 'border-bottom:1px solid var(--surface);';
+          const nameEsc = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+          rows.push(`<tr>
+            ${!productCellRendered
+              ? `<td rowspan="${g.totalCount}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">${name}</td>`
+              : ''}
+            ${ci === 0
+              ? `<td rowspan="${colorSizes.length}" style="font-size:0.8rem;vertical-align:middle;border-right:1px solid var(--border);${borderBottom}">${colorLabel ? colorLabel : '<span style="color:var(--ink-faint)">—</span>'}</td>`
+              : ''}
+            <td style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;${borderBottom}">${s.size}</td>
+            <td style="${borderBottom}${avail===0?'color:var(--ink-faint)':''}">${avail}</td>
+            <td style="${borderBottom}${s.reserved>0?'color:var(--error);font-weight:600':'color:var(--ink-mid)'}">${s.reserved}</td>
+            <td style="${borderBottom}color:var(--ink-mid)">${s.stock}</td>
+            <td style="${borderBottom}${s.sold>0?'':'color:var(--ink-faint)'}">${s.sold}</td>
+            <td style="${borderBottom}"><button class="btn btn--ghost" style="padding:0.25rem 0.6rem;font-size:0.65rem" onclick="editStock('${s.id}','${nameEsc}','${s.size}',${s.stock})">Ajustar</button></td>
+          </tr>`);
+          productCellRendered = true;
         });
       });
-      tbody.innerHTML = rows.join('') || '<tr><td colspan="8" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
-    } catch(e) { console.error(e); }
+    });
+    tbody.innerHTML = rows.join('') || '<tr><td colspan="8" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
   }
 
   window.editStock = (id, name, size, current) => {
@@ -652,7 +720,6 @@
   document.getElementById('modal-close').addEventListener('click', closeModal);
   document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
 
-  window.openOrder = window.openOrder;
   init();
 </script>
 </body>

@@ -11,29 +11,35 @@ export default async function handler(req, res) {
   const user = await verifyAdmin(req);
   if (!user) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
-  // Parse path from URL directly — avoids relying on req.query param naming
+  // Parse resource from URL path — IDs and sub-resources come from query params
   const { pathname } = new URL(req.url, 'http://localhost');
-  const pathSegs = pathname.replace(/^\/api\/admin\/?/, '').split('/').filter(Boolean);
-  const resource = pathSegs[0];        // products | orders | stock
-  const id       = pathSegs[1] || null;
-  const sub      = pathSegs[2] || null; // 'images'
-  const subId    = pathSegs[3] || null; // imageId | 'reorder'
+  const resource = pathname.replace(/^\/api\/admin\/?/, '').split('/')[0];
+
+  // Query params carry all identifiers to avoid multi-segment routing issues
+  const id      = req.query.id      || null;   // product/order UUID
+  const sub     = req.query.sub     || null;   // 'images'
+  const imageId = req.query.imageId || null;   // image UUID
+  const action  = req.query.action  || null;   // 'reorder'
 
   // ── PRODUCTS ──────────────────────────────────────────────────────────────
   if (resource === 'products') {
 
-    // GET /admin/products
+    // GET /admin/products?page=N  (list, paginated)
     if (req.method === 'GET' && !id) {
-      const { data, error } = await supabase.from('products')
+      const page = Math.max(1, parseInt(req.query.page || '1', 10));
+      const from = (page - 1) * PAGE_SIZE;
+      const { data, error, count } = await supabase.from('products')
         .select(`id, slug, name, subtitle, price, display_order, active, featured, created_at,
-          product_images(url, type, display_order), product_sizes(size, stock, reserved)`)
-        .is('deleted_at', null).order('display_order', { ascending: true });
+          product_images(url, type, display_order), product_sizes(size, stock, reserved)`, { count: 'exact' })
+        .is('deleted_at', null)
+        .order('display_order', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
       if (error) { res.status(500).json({ error: error.message }); return; }
-      res.json({ products: data }); return;
+      res.json({ products: data, total: count, page, pages: Math.ceil(count / PAGE_SIZE) }); return;
     }
 
-    // POST /admin/products
-    if (req.method === 'POST' && !id) {
+    // POST /admin/products  (create)
+    if (req.method === 'POST' && !id && !sub) {
       const { name, slug, subtitle, description, price, display_order,
               tipo, modelagem, genero, esporte, subcategoria, cor,
               sku, peso_g, time_ref, ano_ref, tags,
@@ -71,8 +77,8 @@ export default async function handler(req, res) {
       res.status(201).json({ product: data }); return;
     }
 
-    // PUT /admin/products/reorder
-    if (req.method === 'PUT' && id === 'reorder' && !sub) {
+    // PUT /admin/products?action=reorder  (reorder display_order)
+    if (req.method === 'PUT' && action === 'reorder' && !id) {
       const { order } = req.body || {};
       if (!Array.isArray(order)) { res.status(400).json({ error: 'Formato inválido' }); return; }
       for (const item of order) await supabase.from('products').update({ display_order: item.display_order }).eq('id', item.id);
@@ -80,7 +86,7 @@ export default async function handler(req, res) {
       res.json({ ok: true }); return;
     }
 
-    // GET /admin/products/:id
+    // GET /admin/products?id=UUID
     if (req.method === 'GET' && id && !sub) {
       const { data, error } = await supabase.from('products')
         .select(`*, product_images(*), product_sizes(*)`).eq('id', id).is('deleted_at', null).single();
@@ -88,8 +94,8 @@ export default async function handler(req, res) {
       res.json({ product: data }); return;
     }
 
-    // PUT /admin/products/:id
-    if (req.method === 'PUT' && id && id !== 'reorder' && !sub) {
+    // PUT /admin/products?id=UUID  (update)
+    if (req.method === 'PUT' && id && !sub && !action) {
       const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
       if (!before) { res.status(404).json({ error: 'Produto não encontrado' }); return; }
 
@@ -106,7 +112,7 @@ export default async function handler(req, res) {
       res.json({ product: after }); return;
     }
 
-    // DELETE /admin/products/:id
+    // DELETE /admin/products?id=UUID
     if (req.method === 'DELETE' && id && !sub) {
       const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
       if (!before) { res.status(404).json({ error: 'Produto não encontrado' }); return; }
@@ -115,8 +121,8 @@ export default async function handler(req, res) {
       res.json({ ok: true }); return;
     }
 
-    // POST /admin/products/:id/images
-    if (req.method === 'POST' && id && sub === 'images' && !subId) {
+    // POST /admin/products?id=UUID&sub=images
+    if (req.method === 'POST' && id && sub === 'images') {
       const { url, type, display_order } = req.body || {};
       if (!url) { res.status(400).json({ error: 'URL obrigatória' }); return; }
       const VALID_TYPES = ['front', 'back', 'detail', 'preview_offwhite'];
@@ -129,8 +135,8 @@ export default async function handler(req, res) {
       res.status(201).json({ image: data }); return;
     }
 
-    // PUT /admin/products/:id/images/reorder
-    if (req.method === 'PUT' && id && sub === 'images' && subId === 'reorder') {
+    // PUT /admin/products?id=UUID&sub=images&action=reorder
+    if (req.method === 'PUT' && id && sub === 'images' && action === 'reorder') {
       const { order } = req.body || {};
       if (!Array.isArray(order)) { res.status(400).json({ error: 'Formato inválido' }); return; }
       for (const item of order) {
@@ -139,11 +145,11 @@ export default async function handler(req, res) {
       res.json({ ok: true }); return;
     }
 
-    // DELETE /admin/products/:id/images/:imageId
-    if (req.method === 'DELETE' && id && sub === 'images' && subId) {
-      const { error } = await supabase.from('product_images').delete().eq('id', subId).eq('product_id', id);
+    // DELETE /admin/products?id=UUID&sub=images&imageId=IMGID
+    if (req.method === 'DELETE' && id && sub === 'images' && imageId) {
+      const { error } = await supabase.from('product_images').delete().eq('id', imageId).eq('product_id', id);
       if (error) { res.status(500).json({ error: error.message }); return; }
-      await logAudit(supabase, { adminEmail: user.email, action: 'delete_product_image', entity: 'product_image', entityId: subId });
+      await logAudit(supabase, { adminEmail: user.email, action: 'delete_product_image', entity: 'product_image', entityId: imageId });
       res.json({ ok: true }); return;
     }
   }
@@ -151,7 +157,7 @@ export default async function handler(req, res) {
   // ── ORDERS ────────────────────────────────────────────────────────────────
   if (resource === 'orders') {
 
-    // GET /admin/orders
+    // GET /admin/orders?page=N  (list)
     if (req.method === 'GET' && !id) {
       const page   = Math.max(1, parseInt(req.query.page || '1', 10));
       const status = req.query.status || null;
@@ -170,7 +176,7 @@ export default async function handler(req, res) {
       res.json({ orders: data, total: count, page, pages: Math.ceil(count / PAGE_SIZE) }); return;
     }
 
-    // GET /admin/orders/:id
+    // GET /admin/orders?id=UUID
     if (req.method === 'GET' && id) {
       const { data, error } = await supabase.from('orders')
         .select(`*, order_items(*, products(name, slug))`).eq('id', id).single();
@@ -178,7 +184,7 @@ export default async function handler(req, res) {
       res.json({ order: data }); return;
     }
 
-    // PUT /admin/orders/:id
+    // PUT /admin/orders?id=UUID
     if (req.method === 'PUT' && id) {
       const { data: before } = await supabase.from('orders').select('*').eq('id', id).single();
       if (!before) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
@@ -216,7 +222,6 @@ export default async function handler(req, res) {
   // ── STOCK ─────────────────────────────────────────────────────────────────
   if (resource === 'stock') {
 
-    // GET /admin/stock
     if (req.method === 'GET') {
       const [sizesResult, ordersResult] = await Promise.all([
         supabase.from('product_sizes')
@@ -231,7 +236,7 @@ export default async function handler(req, res) {
       const orderIds = (ordersResult.data || []).map(o => o.id);
       if (orderIds.length) {
         const { data: items } = await supabase.from('order_items').select('product_id, size, color, quantity').in('order_id', orderIds);
-        (items || []).forEach(i => { const k = `${i.products?.id || i.product_id}:${i.size}:${i.color||''}`; soldMap[k] = (soldMap[k] || 0) + i.quantity; });
+        (items || []).forEach(i => { const k = `${i.product_id}:${i.size}:${i.color||''}`; soldMap[k] = (soldMap[k] || 0) + i.quantity; });
       }
 
       const stock = (sizesResult.data || []).map(s => ({
@@ -241,7 +246,6 @@ export default async function handler(req, res) {
       res.json({ stock }); return;
     }
 
-    // PUT /admin/stock
     if (req.method === 'PUT') {
       const { product_size_id, new_stock, reason, notes } = req.body || {};
       if (!product_size_id || new_stock == null || isNaN(new_stock) || new_stock < 0) { res.status(400).json({ error: 'Dados inválidos' }); return; }
