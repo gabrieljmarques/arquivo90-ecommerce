@@ -150,4 +150,4 @@ export default async (req, context) => {
   return Response.json({ error: 'Not found' }, { status: 404 });
 };
 
-export const config = { path: '/api/admin/products/*' };
+export const config = { path: ['/api/admin/products', '/api/admin/products/*'] };
