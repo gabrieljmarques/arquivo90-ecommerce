@@ -14,7 +14,7 @@ export default async (req, context) => {
       .select(`
         id, slug, name, subtitle, description, price,
         product_images(url, type, display_order),
-        product_sizes(size, stock, reserved)
+        product_sizes(size, color, stock, reserved)
       `)
       .eq('slug', slug)
       .eq('active', true)
@@ -25,13 +25,25 @@ export default async (req, context) => {
       return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
     }
 
+    const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
+
     const product = {
       ...data,
       product_images: data.product_images.sort((a, b) => a.display_order - b.display_order),
-      product_sizes:  data.product_sizes.map(s => ({
-        size:      s.size,
-        available: Math.max(0, s.stock - s.reserved)
-      }))
+      product_sizes:  data.product_sizes
+        .map(s => ({
+          size:      s.size,
+          color:     s.color || null,
+          available: Math.max(0, s.stock - s.reserved)
+        }))
+        .sort((a, b) => {
+          if (a.color === b.color) {
+            return SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size);
+          }
+          if (a.color === null) return 1;
+          if (b.color === null) return -1;
+          return a.color.localeCompare(b.color) || SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size);
+        })
     };
 
     return Response.json({ product }, {

@@ -16,7 +16,7 @@ export function saveCart(cart) {
 
 export function addItem(item) {
   const cart = getCart();
-  const existing = cart.find(i => i.product_id === item.product_id && i.size === item.size);
+  const existing = cart.find(i => i.product_id === item.product_id && i.size === item.size && (i.color||null) === (item.color||null));
   if (existing) { existing.quantity += item.quantity; }
   else           { cart.push(item); }
   saveCart(cart);
@@ -107,7 +107,7 @@ function _render() {
       </div>
       <div class="cart-item__info">
         <p class="cart-item__name">${item.product_name}</p>
-        <p class="cart-item__meta">${item.size}</p>
+        <p class="cart-item__meta">${item.size}${item.color ? ' · ' + item.color : ''}</p>
         <p class="cart-item__price">${fmt(item.unit_price)}</p>
       </div>
       <button class="cart-item__remove" data-idx="${idx}" aria-label="Remover">×</button>

@@ -51,7 +51,7 @@ export default async (req, context) => {
             tipo, modelagem, genero, esporte, subcategoria, cor,
             sku, peso_g, time_ref, ano_ref, tags,
             meta_title, meta_description, image_url,
-            active, featured } = body;
+            active, featured, colors } = body;
     if (!name?.trim() || !slug?.trim() || !price)
       return Response.json({ error: 'Nome, slug e preço são obrigatórios' }, { status: 400 });
 
@@ -87,10 +87,15 @@ export default async (req, context) => {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // Cria tamanhos P/M/G/GG com estoque 0
-    await supabase.from('product_sizes').insert(
-      ['P','M','G','GG'].map(size => ({ product_id: data.id, size, stock: 0 }))
-    );
+    // Cria tamanhos P/M/G/GG com estoque 0 (com cor, se informada)
+    const DEFAULT_SIZES = ['P','M','G','GG'];
+    const colorList = Array.isArray(colors) && colors.length > 0
+      ? colors.map(c => c.trim()).filter(Boolean)
+      : null;
+    const sizeRows = colorList
+      ? colorList.flatMap(color => DEFAULT_SIZES.map(size => ({ product_id: data.id, size, color, stock: 0 })))
+      : DEFAULT_SIZES.map(size => ({ product_id: data.id, size, color: null, stock: 0 }));
+    await supabase.from('product_sizes').insert(sizeRows);
 
     await logAudit(supabase, { adminEmail: user.email, action: 'create_product', entity: 'product', entityId: data.id, after: data });
     return Response.json({ product: data }, { status: 201 });

@@ -12,7 +12,7 @@ export default async (req) => {
     const [sizesResult, ordersResult] = await Promise.all([
       supabase
         .from('product_sizes')
-        .select('id, size, stock, reserved, products!inner(id, name, slug, active, deleted_at)')
+        .select('id, size, color, stock, reserved, products!inner(id, name, slug, active, deleted_at)')
         .is('products.deleted_at', null)
         .order('size', { ascending: true }),
       supabase
@@ -29,17 +29,18 @@ export default async (req) => {
     if (orderIds.length) {
       const { data: items } = await supabase
         .from('order_items')
-        .select('product_id, size, quantity')
+        .select('product_id, size, color, quantity')
         .in('order_id', orderIds);
       (items || []).forEach(i => {
-        const k = `${i.product_id}:${i.size}`;
+        const k = `${i.product_id}:${i.size}:${i.color||''}`;
         soldMap[k] = (soldMap[k] || 0) + i.quantity;
       });
     }
 
     const stock = (sizesResult.data || []).map(s => ({
       ...s,
-      sold: soldMap[`${s.products.id}:${s.size}`] || 0
+      color: s.color || null,
+      sold: soldMap[`${s.products.id}:${s.size}:${s.color||''}`] || 0
     }));
 
     return Response.json({ stock });

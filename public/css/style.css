@@ -303,6 +303,17 @@ a  { color: inherit; text-decoration: none; }
 .size-btn.selected { border-color: var(--ink); background: var(--ink); color: var(--bg); }
 .size-btn:disabled { opacity: 0.22; cursor: not-allowed; text-decoration: line-through; }
 
+/* ── Color selector ── */
+.color-selector { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.color-btn {
+  font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em;
+  text-transform: uppercase; min-width: 72px; text-align: center;
+  padding: 0.7rem 1rem; border: 1px solid var(--border);
+  background: transparent; color: var(--ink-mid); cursor: pointer; transition: var(--trans);
+}
+.color-btn:hover { border-color: var(--ink); color: var(--ink); }
+.color-btn.selected { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+
 /* ── Badge ── */
 .badge {
   display: inline-block; font-family: var(--font-mono); font-size: 0.6rem;

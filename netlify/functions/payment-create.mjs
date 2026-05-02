@@ -90,7 +90,8 @@ export default async (req, context) => {
     const { data: ok, error: resErr } = await supabase.rpc('reserve_stock', {
       p_product_id: item.product_id,
       p_size:       item.size,
-      p_quantity:   item.quantity
+      p_quantity:   item.quantity,
+      p_color:      item.color || null
     });
 
     if (resErr || !ok) {
@@ -100,7 +101,7 @@ export default async (req, context) => {
       }, { status: 409 });
     }
 
-    reserved.push({ p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity });
+    reserved.push({ p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null });
   }
 
   // ── Calcula totais — preços no banco estão em centavos (inteiros) ────────
@@ -138,6 +139,7 @@ export default async (req, context) => {
       product_id:   i.product_id,
       product_name: productMap[i.product_id].name,
       size:         i.size,
+      color:        i.color || null,
       quantity:     i.quantity,
       unit_price:   productMap[i.product_id].price
     }))
@@ -164,13 +166,17 @@ export default async (req, context) => {
     pref = await prefClient.create({
       body: {
         external_reference: orderId,
-        items: items.map(i => ({
-          id:         i.product_id,
-          title:      `${productMap[i.product_id].name} — ${i.size}`,
-          quantity:   i.quantity,
-          unit_price: +(productMap[i.product_id].price / 100).toFixed(2),
-          currency_id: 'BRL'
-        })),
+        items: items.map(i => {
+          const name  = productMap[i.product_id].name;
+          const color = i.color || null;
+          return {
+            id:         i.product_id,
+            title:      `${name} — ${i.size}${color ? ' / ' + color : ''}`,
+            quantity:   i.quantity,
+            unit_price: +(productMap[i.product_id].price / 100).toFixed(2),
+            currency_id: 'BRL'
+          };
+        }),
         payer:    { name: cleanCustomer.name, email: cleanCustomer.email },
         payment_methods: { installments: 1 },
         back_urls: {

@@ -78,14 +78,15 @@ export default async (req, context) => {
     if (updates.status && CANCEL_STATUSES.includes(updates.status) && !CANCEL_STATUSES.includes(before.status)) {
       const { data: items } = await supabase
         .from('order_items')
-        .select('product_id, size, quantity')
+        .select('product_id, size, color, quantity')
         .eq('order_id', id);
 
       for (const item of (items || [])) {
         await supabase.rpc('release_stock', {
           p_product_id: item.product_id,
           p_size:       item.size,
-          p_quantity:   item.quantity
+          p_quantity:   item.quantity,
+          p_color:      item.color || null
         }).catch(() => {});
       }
 

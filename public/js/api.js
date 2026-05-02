@@ -46,8 +46,9 @@ export function addToCart(item) {
   return cart;
 }
 
-export function removeFromCart(product_id, size) {
-  const cart = getCart().filter(i => !(i.product_id === product_id && i.size === size));
+export function removeFromCart(product_id, size, color) {
+  const c = color || null;
+  const cart = getCart().filter(i => !(i.product_id === product_id && i.size === size && (i.color||null) === c));
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
   return cart;
 }

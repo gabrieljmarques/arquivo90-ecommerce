@@ -123,11 +123,11 @@
           <div class="summary-item">
             <div>
               <div style="font-family:var(--font-sc);font-size:0.9rem">${i.product_name}</div>
-              <div style="color:var(--ink-mid);font-size:0.8rem;margin-top:0.2rem">Tamanho ${i.size} &bull; Qtd ${i.quantity}</div>
+              <div style="color:var(--ink-mid);font-size:0.8rem;margin-top:0.2rem">Tamanho ${i.size}${i.color ? ' · ' + i.color : ''} &bull; Qtd ${i.quantity}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
               <span style="font-family:var(--font-sc);font-size:0.9rem">${fmt(i.unit_price * i.quantity)}</span>
-              <button onclick="removeItem('${i.product_id}','${i.size}')" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.75rem;font-family:var(--font-sc);letter-spacing:0.05em">remover</button>
+              <button onclick="removeItem('${i.product_id}','${i.size}','${i.color||''}')" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.75rem;font-family:var(--font-sc);letter-spacing:0.05em">remover</button>
             </div>
           </div>`).join('')}
         <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem">
@@ -141,8 +141,8 @@
         </div>`;
     }
 
-    window.removeItem = (product_id, size) => {
-      cart = removeFromCart(product_id, size);
+    window.removeItem = (product_id, size, color) => {
+      cart = removeFromCart(product_id, size, color || null);
       renderSummary();
     };
 
@@ -196,6 +196,7 @@
       const items = cart.map(i => ({
         product_id: i.product_id,
         size:       i.size,
+        color:      i.color || null,
         quantity:   i.quantity
       }));
 

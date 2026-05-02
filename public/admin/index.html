@@ -114,7 +114,7 @@
       <h2 style="margin-bottom:2rem">Estoque</h2>
       <div class="admin-card">
         <table class="admin-table">
-          <thead><tr><th>Produto</th><th>Tam.</th><th>Disponível</th><th>Reservado</th><th>Total</th><th>Vendidos</th><th></th></tr></thead>
+          <thead><tr><th>Produto</th><th>Cor</th><th>Tam.</th><th>Disponível</th><th>Reservado</th><th>Total</th><th>Vendidos</th><th></th></tr></thead>
           <tbody id="stock-tbody"><tr><td colspan="6" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
@@ -303,7 +303,7 @@
         <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
         <div><span style="color:var(--ink-mid)">Total:</span> R$ ${(order.total/100).toFixed(2).replace('.',',')}</div>
         <div><span style="color:var(--ink-mid)">Endereço:</span> ${order.shipping_address?.rua}, ${order.shipping_address?.numero} — ${order.shipping_address?.cidade}/${order.shipping_address?.estado}</div>
-        <div><span style="color:var(--ink-mid)">Itens:</span> ${(order.order_items||[]).map(i=>`${i.product_name} ${i.size} x${i.quantity}`).join(', ')}</div>
+        <div><span style="color:var(--ink-mid)">Itens:</span> ${(order.order_items||[]).map(i=>`${i.product_name} ${i.size}${i.color ? ' / '+i.color : ''} x${i.quantity}`).join(', ')}</div>
       </div>
       <div style="display:grid;gap:1rem">
         <div class="field">
@@ -395,6 +395,13 @@
         </div>
         <div class="field"><label class="label">Ordem vitrine</label><input class="input" name="display_order" type="number" value="${p?.display_order??99}"></div>
 
+        <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Variantes de cor</p>
+        <div class="field">
+          <label class="label">Cores disponíveis (separadas por vírgula)</label>
+          <input class="input" name="colors" value="${p?.colors_list||''}" placeholder="Preto, Branco, Off-White">
+          <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-mid);margin-top:0.3rem;display:block">Cada cor cria um conjunto P/M/G/GG de estoque. Deixe vazio para produto sem variação de cor.</span>
+        </div>
+
         <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Categorização</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
           <div class="field"><label class="label">Tipo</label>${sel('tipo',['Camiseta','Moletom','Regata','Polo','Jaqueta'],p?.tipo)}</div>
@@ -485,7 +492,8 @@
       meta_description: f.meta_description.value || null,
       image_url:        imageUrl,
       active:           f.active.checked,
-      featured:         f.featured.checked
+      featured:         f.featured.checked,
+      colors:           f.colors?.value?.trim() ? f.colors.value.split(',').map(c => c.trim()).filter(Boolean) : null
     };
     try {
       if (id) {
@@ -506,40 +514,56 @@
       const { stock } = await api('/admin/stock');
       document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
 
-      // Agrupa por produto mantendo ordem de display
+      // grouped[productName] = { colors: { colorKey: [sizeEntries] }, totalCount }
+      // colorKey: actual color string, or '_' for null
       const grouped = {};
       const productOrder = [];
       stock.forEach(s => {
-        const key = s.products.name;
-        if (!grouped[key]) { grouped[key] = []; productOrder.push(key); }
-        grouped[key].push(s);
+        const name = s.products.name;
+        if (!grouped[name]) { grouped[name] = { colors: {}, colorOrder: [], totalCount: 0 }; productOrder.push(name); }
+        const colorKey = s.color || '_';
+        if (!grouped[name].colors[colorKey]) { grouped[name].colors[colorKey] = []; grouped[name].colorOrder.push(colorKey); }
+        grouped[name].colors[colorKey].push(s);
+        grouped[name].totalCount++;
       });
-      Object.values(grouped).forEach(arr =>
-        arr.sort((a,b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size))
-      );
+      // Sort sizes within each color group
+      Object.values(grouped).forEach(g => {
+        Object.values(g.colors).forEach(arr =>
+          arr.sort((a,b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size))
+        );
+      });
 
       const tbody = document.getElementById('stock-tbody');
       const rows = [];
       productOrder.forEach(name => {
-        const sizes = grouped[name];
-        sizes.forEach((s, i) => {
-          const avail = Math.max(0, s.stock - s.reserved);
-          const isLast = i === sizes.length - 1;
-          const borderBottom = isLast ? '' : 'border-bottom:1px solid var(--surface);';
-          rows.push(`<tr>
-            ${i === 0
-              ? `<td rowspan="${sizes.length}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">${name}</td>`
-              : ''}
-            <td style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;${borderBottom}">${s.size}</td>
-            <td style="${borderBottom}${avail===0?'color:var(--ink-faint)':''}">${avail}</td>
-            <td style="${borderBottom}${s.reserved>0?'color:var(--error);font-weight:600':'color:var(--ink-mid)'}">${s.reserved}</td>
-            <td style="${borderBottom}color:var(--ink-mid)">${s.stock}</td>
-            <td style="${borderBottom}${s.sold>0?'':'color:var(--ink-faint)'}">${s.sold}</td>
-            <td style="${borderBottom}"><button class="btn btn--ghost" style="padding:0.25rem 0.6rem;font-size:0.65rem" onclick="editStock('${s.id}','${name}','${s.size}',${s.stock})">Ajustar</button></td>
-          </tr>`);
+        const g = grouped[name];
+        let productCellRendered = false;
+        g.colorOrder.forEach(colorKey => {
+          const colorSizes = g.colors[colorKey];
+          const colorLabel = colorKey === '_' ? null : colorKey;
+          colorSizes.forEach((s, ci) => {
+            const avail = Math.max(0, s.stock - s.reserved);
+            const isLastInColor = ci === colorSizes.length - 1;
+            const borderBottom = isLastInColor ? '' : 'border-bottom:1px solid var(--surface);';
+            rows.push(`<tr>
+              ${!productCellRendered
+                ? `<td rowspan="${g.totalCount}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">${name}</td>`
+                : ''}
+              ${ci === 0
+                ? `<td rowspan="${colorSizes.length}" style="font-size:0.8rem;vertical-align:middle;border-right:1px solid var(--border);${isLastInColor?'':'border-bottom:1px solid var(--surface);'}">${colorLabel ? colorLabel : '<span style="color:var(--ink-faint)">—</span>'}</td>`
+                : ''}
+              <td style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;${borderBottom}">${s.size}</td>
+              <td style="${borderBottom}${avail===0?'color:var(--ink-faint)':''}">${avail}</td>
+              <td style="${borderBottom}${s.reserved>0?'color:var(--error);font-weight:600':'color:var(--ink-mid)'}">${s.reserved}</td>
+              <td style="${borderBottom}color:var(--ink-mid)">${s.stock}</td>
+              <td style="${borderBottom}${s.sold>0?'':'color:var(--ink-faint)'}">${s.sold}</td>
+              <td style="${borderBottom}"><button class="btn btn--ghost" style="padding:0.25rem 0.6rem;font-size:0.65rem" onclick="editStock('${s.id}','${name}','${s.size}',${s.stock})">Ajustar</button></td>
+            </tr>`);
+            productCellRendered = true;
+          });
         });
       });
-      tbody.innerHTML = rows.join('') || '<tr><td colspan="7" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
+      tbody.innerHTML = rows.join('') || '<tr><td colspan="8" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
     } catch(e) { console.error(e); }
   }
 

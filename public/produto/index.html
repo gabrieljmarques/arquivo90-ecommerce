@@ -108,18 +108,41 @@
       document.title = `${p.name} — Arquivo 90`;
 
       _images = p.product_images ?? [];
-      const sizes  = p.product_sizes ?? [];
-      const cover  = _images.find(i => i.type === 'front') || _images[0] || null;
+      const sizes     = p.product_sizes ?? [];
+      const hasColors = sizes.some(s => s.color);
+      const cover     = _images.find(i => i.type === 'front') || _images[0] || null;
 
       const thumbsHtml = _images.map((img, i) =>
         `<img src="${img.url}" class="gallery__thumb${i === 0 ? ' active' : ''}" data-idx="${i}" alt="" loading="lazy">`
       ).join('');
 
-      const sizesHtml = sizes.map(s =>
-        `<button class="size-btn" data-size="${s.size}" data-price="${p.price}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`
-      ).join('');
+      // For no-color products: all sizes; for color products: shown after color pick
+      const allAvail = sizes.filter(s => s.available > 0);
+      const isEsgotado = allAvail.length === 0;
 
-      const availSizes = sizes.filter(s => s.available > 0);
+      // Build unique color list (preserving order)
+      const colorList = hasColors
+        ? [...new Map(sizes.filter(s => s.color).map(s => [s.color, s.color])).values()]
+        : [];
+
+      const colorSelectorHtml = hasColors ? `
+        <div style="margin-bottom:1.5rem">
+          <p class="info__section-label">Cor</p>
+          <div class="color-selector" id="color-selector">
+            ${colorList.map(c => `<button class="color-btn" data-color="${c}">${c}</button>`).join('')}
+          </div>
+        </div>
+        <div id="size-wrap" style="margin-bottom:2rem;display:none">
+          <p class="info__section-label">Tamanho</p>
+          <div class="size-selector" id="size-selector"></div>
+        </div>` : `
+        <div style="margin-bottom:2rem">
+          <p class="info__section-label">Tamanho</p>
+          <div class="size-selector" id="size-selector">
+            ${sizes.map(s => `<button class="size-btn" data-size="${s.size}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`).join('')}
+          </div>
+          ${isEsgotado ? '<p style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--error);margin-top:0.75rem">Esgotado</p>' : ''}
+        </div>`;
 
       layout.innerHTML = `
         <div class="gallery">
@@ -137,15 +160,10 @@
           ${p.subtitle ? `<p class="info__sub">${p.subtitle}</p>` : ''}
           <p class="info__price">${fmt(p.price)}</p>
 
-          ${sizes.length ? `
-          <div style="margin-bottom:2rem">
-            <p class="info__section-label">Tamanho</p>
-            <div class="size-selector" id="size-selector">${sizesHtml}</div>
-            ${availSizes.length > 0 ? '' : '<p style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--error);margin-top:0.75rem">Esgotado</p>'}
-          </div>` : ''}
+          ${sizes.length ? colorSelectorHtml : ''}
 
-          <button class="btn btn--primary btn--full" id="btn-buy" ${availSizes.length === 0 ? 'disabled' : ''}>
-            ${availSizes.length === 0 ? 'Esgotado' : 'Adicionar ao carrinho'}
+          <button class="btn btn--primary btn--full" id="btn-buy" ${isEsgotado ? 'disabled' : ''}>
+            ${isEsgotado ? 'Esgotado' : 'Adicionar ao carrinho'}
           </button>
 
           ${p.description ? `
@@ -167,18 +185,56 @@
         th.addEventListener('click', () => setMainImage(i));
       });
 
-      // ── Size selection ──
-      let selectedSize = null;
-      document.querySelectorAll('.size-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          selectedSize = btn.dataset.size;
+      // ── Variant state ──
+      let selectedColor = null;
+      let selectedSize  = null;
+
+      function sizesForColor(color) {
+        return sizes.filter(s => s.color === color);
+      }
+
+      function renderSizes(colorSizes) {
+        const sel = document.getElementById('size-selector');
+        if (!sel) return;
+        sel.innerHTML = colorSizes.map(s =>
+          `<button class="size-btn" data-size="${s.size}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`
+        ).join('');
+        sel.querySelectorAll('.size-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            sel.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedSize = btn.dataset.size;
+          });
         });
-      });
+        selectedSize = null;
+      }
+
+      // ── Color selection ──
+      if (hasColors) {
+        document.querySelectorAll('.color-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedColor = btn.dataset.color;
+            renderSizes(sizesForColor(selectedColor));
+            const wrap = document.getElementById('size-wrap');
+            if (wrap) wrap.style.display = 'block';
+          });
+        });
+      } else {
+        // No colors — attach size listeners directly
+        document.querySelectorAll('.size-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedSize = btn.dataset.size;
+          });
+        });
+      }
 
       // ── Add to cart ──
       document.getElementById('btn-buy')?.addEventListener('click', () => {
+        if (hasColors && !selectedColor) { toast('Selecione uma cor', 'error'); return; }
         if (!selectedSize) { toast('Selecione um tamanho', 'error'); return; }
 
         const coverImg = _images.find(i => i.type === 'front') || _images[0];
@@ -187,6 +243,7 @@
           product_name: p.name,
           slug:         p.slug,
           size:         selectedSize,
+          color:        hasColors ? selectedColor : null,
           quantity:     1,
           unit_price:   p.price,
           image:        coverImg?.url || ''
