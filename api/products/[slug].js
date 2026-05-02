@@ -1,12 +1,11 @@
-import { json } from '../utils/response.js';
 import { getSupabase } from '../utils/supabase.js';
 
-export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
-  if (req.method !== 'GET')    return json({ error: 'Method not allowed' }, { status: 405 });
+export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+  if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-  const slug = new URL(req.url).searchParams.get('slug');
-  if (!slug) return json({ error: 'Produto não encontrado' }, { status: 404 });
+  const { slug } = req.query;
+  if (!slug) { res.status(404).json({ error: 'Produto não encontrado' }); return; }
 
   try {
     const supabase = getSupabase();
@@ -22,9 +21,7 @@ export default async (req) => {
       .is('deleted_at', null)
       .single();
 
-    if (error || !data) {
-      return json({ error: 'Produto não encontrado' }, { status: 404 });
-    }
+    if (error || !data) { res.status(404).json({ error: 'Produto não encontrado' }); return; }
 
     const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
 
@@ -32,26 +29,19 @@ export default async (req) => {
       ...data,
       product_images: data.product_images.sort((a, b) => a.display_order - b.display_order),
       product_sizes:  data.product_sizes
-        .map(s => ({
-          size:      s.size,
-          color:     s.color || null,
-          available: Math.max(0, s.stock - s.reserved)
-        }))
+        .map(s => ({ size: s.size, color: s.color || null, available: Math.max(0, s.stock - s.reserved) }))
         .sort((a, b) => {
-          if (a.color === b.color) {
-            return SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size);
-          }
+          if (a.color === b.color) return SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size);
           if (a.color === null) return 1;
           if (b.color === null) return -1;
           return a.color.localeCompare(b.color) || SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size);
         })
     };
 
-    return json({ product }, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
-    });
+    res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    res.json({ product });
   } catch (e) {
     console.error('product error:', e.message);
-    return json({ error: e.message }, { status: 500 });
+    res.status(500).json({ error: e.message });
   }
-};
+}

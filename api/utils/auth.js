@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 export async function verifyAdmin(req) {
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers['authorization'];
   if (!authHeader?.startsWith('Bearer ')) return null;
 
   const token = authHeader.slice(7);

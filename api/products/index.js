@@ -1,9 +1,8 @@
-﻿import { json } from '../utils/response.js';
 import { getSupabase } from '../utils/supabase.js';
 
-export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
-  if (req.method !== 'GET')    return json({ error: 'Method not allowed' }, { status: 405 });
+export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+  if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
   try {
     const supabase = getSupabase();
@@ -18,10 +17,7 @@ export default async (req) => {
       .is('deleted_at', null)
       .order('display_order', { ascending: true });
 
-    if (error) {
-      console.error('products fetch error:', error.message);
-      return json({ error: error.message }, { status: 500 });
-    }
+    if (error) { res.status(500).json({ error: error.message }); return; }
 
     const products = data.map(p => ({
       ...p,
@@ -32,11 +28,10 @@ export default async (req) => {
       }))
     }));
 
-    return json({ products }, {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
-    });
+    res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+    res.json({ products });
   } catch (e) {
     console.error('products error:', e.message);
-    return json({ error: e.message }, { status: 500 });
+    res.status(500).json({ error: e.message });
   }
-};
+}
