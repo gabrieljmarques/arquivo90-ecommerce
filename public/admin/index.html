@@ -97,9 +97,9 @@
 
     <!-- Produtos -->
     <div class="page" id="page-produtos">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;gap:3rem;flex-wrap:wrap">
         <h2>Produtos</h2>
-        <button class="btn btn--primary" id="btn-new-product" style="font-size:0.78rem;padding:0.7rem 1.4rem">+ Novo produto</button>
+        <button class="btn btn--primary" id="btn-new-product" style="font-size:0.78rem;padding:0.7rem 1.4rem;flex-shrink:0">+ Novo produto</button>
       </div>
       <div class="admin-card">
         <table class="admin-table">
@@ -353,11 +353,11 @@
           <td><div style="font-family:var(--font-sc)">${p.name}</div><div style="color:var(--ink-mid);font-size:0.78rem">${p.slug}</div></td>
           <td style="font-family:var(--font-sc)">R$ ${(p.price/100).toFixed(2).replace('.',',')}</td>
           <td><span class="status status--${p.active?'paid':'cancelled'}">${p.active?'Ativo':'Inativo'}</span></td>
-          <td style="color:#888;padding:1.5rem">${p.display_order}</td>
-          <td style="display:flex;gap:0.5rem">
+          <td style="color:var(--ink-mid)">${p.display_order}</td>
+          <td><div style="display:flex;gap:0.5rem">
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="editProduct('${p.id}')">Editar</button>
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem;color:var(--error)" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Ocultar':'Ativar'}</button>
-          </td>
+          </div></td>
         </tr>`).join('') || '<tr><td colspan="5" style="color:#888;padding:1.5rem">Nenhum produto</td></tr>';
     } catch(e) { console.error(e); }
   }

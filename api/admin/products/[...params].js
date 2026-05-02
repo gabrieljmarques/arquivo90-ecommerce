@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   }
 
   // DELETE /api/admin/products/:id
-  if (req.method === 'DELETE' && id) {
+  if (req.method === 'DELETE' && id && !action) {
     const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
     if (!before) { res.status(404).json({ error: 'Produto não encontrado' }); return; }
     await supabase.from('products').update({ active: false, deleted_at: new Date().toISOString() }).eq('id', id);
