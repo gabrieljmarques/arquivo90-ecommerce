@@ -189,6 +189,21 @@
   });
 
   async function init() {
+    // Processa magic link / recovery token que vem no hash da URL
+    const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+    if (hash.access_token) {
+      const { data, error } = await sb.auth.setSession({
+        access_token:  hash.access_token,
+        refresh_token: hash.refresh_token || ''
+      });
+      history.replaceState(null, '', location.pathname);
+      if (!error && data.session) {
+        session = data.session;
+        showAdmin();
+        return;
+      }
+    }
+
     session = await checkSession();
     if (session) showAdmin();
   }
