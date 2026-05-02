@@ -5,49 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Arquivo 90</title>
   <link rel="icon" href="/img/favicon.ico">
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    /* Layout */
-    .admin-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-    .sidebar { border-right: 1px solid var(--border); padding: 2rem 0; position: fixed; top: 0; left: 0; height: 100vh; width: 220px; background: var(--bg); z-index: 50; overflow-y: auto; }
-    .sidebar__brand { font-family: var(--font-sc); font-size: 0.85rem; letter-spacing: 0.15em; padding: 0 1.75rem 2.5rem; color: var(--ink); }
-    .sidebar__nav a { display: block; padding: 0.75rem 1.75rem; font-family: var(--font-sc); font-size: 0.8rem; letter-spacing: 0.1em; color: var(--ink-mid); transition: color 0.15s, background 0.15s; }
-    .sidebar__nav a:hover { color: var(--ink); background: var(--surface); }
-    .sidebar__nav a.active { color: var(--ink); background: var(--surface); border-left: 2px solid var(--ink); }
-    .sidebar__footer { position: absolute; bottom: 1.5rem; left: 0; right: 0; padding: 0 1.75rem; }
-    .main { margin-left: 220px; padding: 3rem 3.5rem; max-width: 1200px; }
-    .page { display: none; }
-    .page.active { display: block; }
-    /* Login */
-    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .login-box { width: 100%; max-width: 380px; }
-    /* Stats */
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 3rem; }
-    .stat { background: var(--surface); border: 1px solid var(--border); padding: 1.75rem 2rem; }
-    .stat__value { font-family: var(--font-sc); font-size: 2.4rem; letter-spacing: 0.02em; line-height: 1; }
-    .stat__label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mid); margin-top: 0.6rem; }
-    /* Card / Table */
-    .admin-card { border: 1px solid #D5CFC5; overflow-x: auto; background: #F4EFE6; min-height: 120px; width: 100%; display: block; }
-    .admin-table { width: 100% !important; border-collapse: collapse !important; font-size: 0.88rem; }
-    .admin-table thead { display: table-header-group !important; }
-    .admin-table tbody { display: table-row-group !important; }
-    .admin-table tr { display: table-row !important; }
-    .admin-table th { display: table-cell !important; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #888; padding: 0.85rem 1.25rem; text-align: left; border-bottom: 1px solid #D5CFC5; background: #EDE8DF; white-space: nowrap; }
-    .admin-table td { display: table-cell !important; padding: 1rem 1.25rem; border-bottom: 1px solid #D5CFC5; vertical-align: middle; color: #111; font-size: 0.88rem; }
-    .admin-table tbody tr:last-child td { border-bottom: none; }
-    .admin-table tbody tr:hover td { background: #EDE8DF; }
-    /* Modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,17,0.45); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 4rem 1rem; overflow-y: auto; }
-    .modal { background: var(--bg); border: 1px solid var(--border); width: 100%; max-width: 640px; padding: 2.5rem; position: relative; }
-    .modal__close { position: absolute; top: 1.25rem; right: 1.25rem; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--ink-mid); line-height: 1; }
-
-    @media (max-width: 960px) {
-      .admin-shell { grid-template-columns: 1fr; }
-      .sidebar { display: none; }
-      .main { margin-left: 0; padding: 2rem; max-width: 100%; }
-      .stats { grid-template-columns: repeat(2,1fr); }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
 
