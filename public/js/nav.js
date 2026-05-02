@@ -60,8 +60,15 @@ export function buildNavDrawer(products, activePath) {
     if (!items.length) return '';
     return `
       <div class="nav-drawer__section">
-        <p class="nav-drawer__section-label">${label}</p>
-        ${items.map(v => `<a href="/produtos?${param}=${encodeURIComponent(v)}" class="nav-drawer__link">${v}</a>`).join('')}
+        <button class="nav-drawer__section-toggle" aria-expanded="false">
+          <span>${label}</span>
+          <svg class="nav-drawer__chevron" width="10" height="6" viewBox="0 0 10 6" fill="none">
+            <path stroke="currentColor" stroke-width="1.4" d="M1 1l4 4 4-4"/>
+          </svg>
+        </button>
+        <div class="nav-drawer__section-items" hidden>
+          ${items.map(v => `<a href="/produtos?${param}=${encodeURIComponent(v)}" class="nav-drawer__link">${v}</a>`).join('')}
+        </div>
       </div>`;
   }
 
@@ -72,4 +79,14 @@ export function buildNavDrawer(products, activePath) {
     ${section('Categorias', subcats, 'subcategoria')}
     ${section('Times', times, 'time_ref')}
     <a href="/sobre" class="nav-drawer__link nav-drawer__link--top${activePath === '/sobre' ? ' active' : ''}">Sobre</a>`;
+
+  body.querySelectorAll('.nav-drawer__section-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', !expanded);
+      const items = btn.nextElementSibling;
+      if (expanded) items.setAttribute('hidden', '');
+      else items.removeAttribute('hidden');
+    });
+  });
 }
