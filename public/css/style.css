@@ -113,6 +113,7 @@ a  { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 0.5rem; transition: color 0.2s;
 }
 .cart-btn:hover { color: var(--ink); }
+.cart-btn__icon { display: none; }
 .cart-count {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
@@ -823,6 +824,8 @@ a  { color: inherit; text-decoration: none; }
   .header__nav { display: none; }
   .header__search { display: none; }
   .hamburger-btn { display: flex; }
+  .cart-btn__label { display: none; }
+  .cart-btn__icon { display: block; }
   .header__main { padding: 0.85rem 1.25rem; }
   .header__logo { flex: 1; justify-content: center; }
   .header__actions { margin-left: 0; }
