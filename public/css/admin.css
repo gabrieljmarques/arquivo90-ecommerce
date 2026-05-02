@@ -100,13 +100,13 @@ h3 { font-size: 1.1rem; }
 .status--cancelled, .status--refunded { background: #f8d7da; color: #721c24; }
 
 /* ── Layout ── */
-.admin-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.admin-shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
 
 .sidebar {
   border-right: 1px solid var(--border);
   position: fixed;
   top: 0; left: 0;
-  height: 100vh; width: 220px;
+  height: 100vh; width: 200px;
   background: var(--bg);
   z-index: 50;
   overflow-y: auto;
@@ -133,7 +133,7 @@ h3 { font-size: 1.1rem; }
 .sidebar__nav a.active { color: var(--ink); background: var(--surface); border-left: 2px solid var(--ink); }
 .sidebar__footer { margin-top: auto; padding: 1.5rem 1.75rem; }
 
-.main { margin-left: 220px; padding: 2.5rem 2rem; width: calc(100% - 220px); max-width: none; }
+.main { margin-left: 200px; padding: 2rem 1.5rem; width: calc(100% - 200px); max-width: none; }
 
 .page { display: none; }
 .page.active { display: block; }
@@ -202,6 +202,6 @@ h3 { font-size: 1.1rem; }
 @media (max-width: 960px) {
   .admin-shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .main { margin-left: 0; padding: 2rem; width: 100%; }
+  .main { margin-left: 0; padding: 1.5rem; width: 100%; }
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
