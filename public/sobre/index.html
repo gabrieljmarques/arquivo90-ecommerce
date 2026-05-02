@@ -150,7 +150,8 @@ São Paulo, BR</p>
 
         if (settings?.sobre) {
           if (settings.sobre.quote) {
-            document.getElementById('sobre-quote').textContent = settings.sobre.quote;
+            document.getElementById('sobre-quote').innerHTML = settings.sobre.quote.replace(/
+/g, '<br>');
           }
           if (Array.isArray(settings.sobre.pillars)) {
             document.getElementById('sobre-pillars').innerHTML = settings.sobre.pillars.map(p => `

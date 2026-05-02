@@ -216,7 +216,7 @@
 
         if (settings.sobre) {
           if (settings.sobre.quote) {
-            document.getElementById('sobre-quote').textContent = '“' + settings.sobre.quote + '”';
+            document.getElementById('sobre-quote').innerHTML = '“' + settings.sobre.quote.replace(/\n/g, '<br>') + '”';
           }
           if (Array.isArray(settings.sobre.pillars)) {
             const el = document.getElementById('sobre-pillars');
