@@ -37,13 +37,12 @@
     </div>
     <nav class="header__nav" id="main-nav">
       <a href="/" class="active">Início</a>
-      <a href="/produtos">Produtos</a>
-      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-produtos" style="display:none">
         <button class="nav-dropdown-trigger">
-          Times
+          Produtos
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
-        <div class="nav-dropdown-menu" id="nav-times-menu"></div>
+        <div class="nav-dropdown-menu" id="nav-produtos-menu"></div>
       </div>
       <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none">
         <button class="nav-dropdown-trigger">
@@ -58,6 +57,13 @@
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-esportes-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Times
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-times-menu"></div>
       </div>
       <a href="/sobre">Sobre</a>
     </nav>
@@ -276,9 +282,10 @@
     }
 
     function buildNavDropdowns(products) {
-      const subcats  = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
-      const tipos    = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
-      const esportes = [...new Set(products.map(p => p.esporte).filter(Boolean))].sort();
+      const tipos     = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
+      const subcats   = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
+      const esportes  = [...new Set(products.map(p => p.esporte).filter(Boolean))].sort();
+      const times     = [...new Set(products.map(p => p.time_ref).filter(Boolean))].sort();
 
       const fill = (menuId, wrapId, items, param) => {
         if (!items.length) return;
@@ -288,9 +295,10 @@
         document.getElementById(wrapId).style.display = '';
       };
 
-      fill('nav-times-menu',      'nav-times',      subcats,  'subcategoria');
-      fill('nav-categorias-menu', 'nav-categorias', tipos,    'tipo');
+      fill('nav-produtos-menu',   'nav-produtos',   tipos,    'tipo');
+      fill('nav-categorias-menu', 'nav-categorias', subcats,  'subcategoria');
       fill('nav-esportes-menu',   'nav-esportes',   esportes, 'esporte');
+      fill('nav-times-menu',      'nav-times',      times,    'time_ref');
     }
 
     async function loadProducts() {

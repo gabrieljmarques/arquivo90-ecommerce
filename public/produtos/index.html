@@ -32,13 +32,12 @@
     </div>
     <nav class="header__nav" id="main-nav">
       <a href="/">Início</a>
-      <a href="/produtos" class="active">Produtos</a>
-      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-produtos" style="display:none">
         <button class="nav-dropdown-trigger">
-          Times
+          Produtos
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
-        <div class="nav-dropdown-menu" id="nav-times-menu"></div>
+        <div class="nav-dropdown-menu" id="nav-produtos-menu"></div>
       </div>
       <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none">
         <button class="nav-dropdown-trigger">
@@ -53,6 +52,13 @@
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-esportes-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Times
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-times-menu"></div>
       </div>
       <a href="/sobre">Sobre</a>
     </nav>
@@ -176,6 +182,7 @@
         tipo:        p.getAll('tipo'),
         modelagem:   p.getAll('modelagem'),
         tamanho:     p.getAll('tamanho'),
+        time_ref:    p.getAll('time_ref'),
         sort:        p.get('sort') || 'novidades',
         page:        Math.max(1, parseInt(p.get('page') || '1', 10))
       };
@@ -189,6 +196,7 @@
       newState.tipo.forEach(v         => p.append('tipo', v));
       newState.modelagem.forEach(v    => p.append('modelagem', v));
       newState.tamanho.forEach(v      => p.append('tamanho', v));
+      newState.time_ref.forEach(v     => p.append('time_ref', v));
       if (newState.sort !== 'novidades') p.set('sort', newState.sort);
       if (newState.page > 1)   p.set('page', newState.page);
       const qs = p.toString();
@@ -210,6 +218,7 @@
       if (st.subcategoria.length) out = out.filter(p => st.subcategoria.includes(p.subcategoria));
       if (st.tipo.length)         out = out.filter(p => st.tipo.includes(p.tipo));
       if (st.modelagem.length)    out = out.filter(p => st.modelagem.includes(p.modelagem));
+      if (st.time_ref.length)     out = out.filter(p => st.time_ref.includes(p.time_ref));
       if (st.tamanho.length) {
         out = out.filter(p =>
           p.product_sizes.some(s => st.tamanho.includes(s.size) && s.available > 0)
@@ -471,7 +480,7 @@
 
     // ── Clear all ──
     document.getElementById('filter-clear-all')?.addEventListener('click', () => {
-      state = { ...state, esporte: [], subcategoria: [], tipo: [], modelagem: [], tamanho: [], q: '', page: 1 };
+      state = { ...state, esporte: [], subcategoria: [], tipo: [], modelagem: [], tamanho: [], time_ref: [], q: '', page: 1 };
       if (document.getElementById('search-input')) document.getElementById('search-input').value = '';
       pushURL(state);
       render();
@@ -491,9 +500,10 @@
     });
 
     function buildNavDropdowns(products) {
-      const subcats  = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
       const tipos    = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
+      const subcats  = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
       const esportes = [...new Set(products.map(p => p.esporte).filter(Boolean))].sort();
+      const times    = [...new Set(products.map(p => p.time_ref).filter(Boolean))].sort();
 
       const fill = (menuId, wrapId, items, param) => {
         if (!items.length) return;
@@ -503,9 +513,10 @@
         document.getElementById(wrapId).style.display = '';
       };
 
-      fill('nav-times-menu',      'nav-times',      subcats,  'subcategoria');
-      fill('nav-categorias-menu', 'nav-categorias', tipos,    'tipo');
+      fill('nav-produtos-menu',   'nav-produtos',   tipos,    'tipo');
+      fill('nav-categorias-menu', 'nav-categorias', subcats,  'subcategoria');
       fill('nav-esportes-menu',   'nav-esportes',   esportes, 'esporte');
+      fill('nav-times-menu',      'nav-times',      times,    'time_ref');
     }
 
     // ── Load products ──
