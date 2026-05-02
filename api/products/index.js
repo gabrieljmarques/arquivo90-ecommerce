@@ -19,13 +19,14 @@ export default async function handler(req, res) {
 
     if (error) { res.status(500).json({ error: error.message }); return; }
 
+    const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
+
     const products = data.map(p => ({
       ...p,
       product_images: p.product_images.sort((a, b) => a.display_order - b.display_order),
-      product_sizes:  p.product_sizes.map(s => ({
-        size:      s.size,
-        available: Math.max(0, s.stock - s.reserved)
-      }))
+      product_sizes:  p.product_sizes
+        .map(s => ({ size: s.size, available: Math.max(0, s.stock - s.reserved) }))
+        .sort((a, b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size))
     }));
 
     res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
