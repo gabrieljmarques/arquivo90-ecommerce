@@ -17,9 +17,10 @@
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
       </a>
-      <nav class="header__nav" style="flex:1;display:flex;align-items:center">
-        <a href="/" style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.1em">← Voltar</a>
-      </nav>
+      <div class="header__search">
+        <input type="search" class="search-input" id="search-input" placeholder="Pesquisar produtos..." autocomplete="off">
+        <button class="search-btn" aria-label="Pesquisar">⌕</button>
+      </div>
       <div class="header__actions">
         <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
           <span>Carrinho</span>
@@ -27,6 +28,38 @@
         </button>
       </div>
     </div>
+    <nav class="header__nav" id="main-nav">
+      <a href="/">Início</a>
+      <div class="nav-dropdown-wrap" id="nav-produtos" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Produtos
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-produtos-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-esportes" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Esportes
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-esportes-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Categorias
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-categorias-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Times
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-times-menu"></div>
+      </div>
+      <a href="/sobre">Sobre</a>
+    </nav>
   </header>
 
   <!-- Product layout -->
@@ -57,6 +90,32 @@
     import { initCartButton, addItem, openCart, fmt } from '/js/cart.js';
 
     initCartButton('#cart-toggle');
+
+    function buildNavDropdowns(products) {
+      const tipos    = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
+      const subcats  = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
+      const esportes = [...new Set(products.map(p => p.esporte).filter(Boolean))].sort();
+      const times    = [...new Set(products.map(p => p.time_ref).filter(Boolean))].sort();
+      const fill = (menuId, wrapId, items, param) => {
+        if (!items.length) return;
+        document.getElementById(menuId).innerHTML = items
+          .map(v => `<a href="/produtos?${param}=${encodeURIComponent(v)}">${v}</a>`).join('');
+        document.getElementById(wrapId).style.display = '';
+      };
+      fill('nav-produtos-menu',   'nav-produtos',   tipos,    'tipo');
+      fill('nav-esportes-menu',   'nav-esportes',   esportes, 'esporte');
+      fill('nav-categorias-menu', 'nav-categorias', subcats,  'subcategoria');
+      fill('nav-times-menu',      'nav-times',      times,    'time_ref');
+    }
+
+    fetch('/api/products').then(r => r.json()).then(({ products }) => buildNavDropdowns(products ?? [])).catch(() => {});
+
+    document.getElementById('search-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const q = e.target.value.trim();
+        if (q) location.href = `/produtos?q=${encodeURIComponent(q)}`;
+      }
+    });
 
     // ── Toast ──
     let _toastTimer;
