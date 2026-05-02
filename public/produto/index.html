@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquivo 90</title>
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header scrolled" id="header">
+    <nav class="header__nav">
+      <a href="/">← Voltar</a>
+    </nav>
+    <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
+      <img src="/img/logo.png" alt="Arquivo 90"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
+    </a>
+    <div class="header__actions">
+      <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
+        <span>Carrinho</span>
+        <span class="cart-count" id="cart-count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Product layout -->
+  <div class="container">
+    <div class="product-layout" id="product-layout">
+      <div style="grid-column:1/-1;padding:4rem 0;text-align:center">
+        <span class="spinner"></span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer" style="margin-top:5rem">
+    <div class="container footer__inner">
+      <div>
+        <p class="footer__brand">Arquivo 90</p>
+        <p class="footer__sub" style="margin-top:0.25rem">Memória em Tecido</p>
+      </div>
+      <p class="footer__sub">© 2026 &mdash; São Paulo</p>
+      <nav class="footer__links">
+        <a href="https://instagram.com/arquivo90" target="_blank" rel="noopener noreferrer">Instagram</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { initCartButton, addItem, openCart, fmt } from '/js/cart.js';
+
+    initCartButton('#cart-toggle');
+
+    // ── Toast ──
+    let _toastTimer;
+    function toast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `toast ${type} show`;
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // ── Gallery ──
+    let _images = [];
+
+    function setMainImage(idx) {
+      const main = document.getElementById('gallery-main');
+      if (!main || !_images[idx]) return;
+      main.style.opacity = '0';
+      setTimeout(() => {
+        main.src = _images[idx].url;
+        main.style.opacity = '1';
+      }, 200);
+      document.querySelectorAll('.gallery__thumb').forEach((th, i) => {
+        th.classList.toggle('active', i === idx);
+      });
+    }
+
+    // ── Load product ──
+    async function load() {
+      const layout = document.getElementById('product-layout');
+      const slug = location.pathname.split('/').filter(Boolean).pop();
+
+      let result;
+      try {
+        const res = await fetch(`/api/products/${slug}`);
+        if (res.status === 404) throw new Error('404');
+        if (!res.ok) throw new Error(`${res.status}`);
+        result = await res.json();
+      } catch {
+        layout.innerHTML = `
+          <div style="grid-column:1/-1;padding:6rem 0;text-align:center">
+            <p style="font-family:var(--font-sc);letter-spacing:0.08em;color:var(--ink-mid)">Produto não encontrado.</p>
+            <a href="/" style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-mid);margin-top:1.5rem;display:inline-block;text-decoration:underline">← Voltar para a loja</a>
+          </div>`;
+        return;
+      }
+
+      const p = result.product;
+      document.title = `${p.name} — Arquivo 90`;
+
+      _images = p.product_images ?? [];
+      const sizes  = p.product_sizes ?? [];
+      const cover  = _images.find(i => i.type === 'front') || _images[0] || null;
+
+      const thumbsHtml = _images.map((img, i) =>
+        `<img src="${img.url}" class="gallery__thumb${i === 0 ? ' active' : ''}" data-idx="${i}" alt="" loading="lazy">`
+      ).join('');
+
+      const sizesHtml = sizes.map(s =>
+        `<button class="size-btn" data-size="${s.size}" data-price="${p.price}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`
+      ).join('');
+
+      const availSizes = sizes.filter(s => s.available > 0);
+
+      layout.innerHTML = `
+        <div class="gallery">
+          <img id="gallery-main"
+               src="${cover?.url || ''}"
+               alt="${p.name}"
+               class="gallery__main"
+               style="transition:opacity 0.2s">
+          ${_images.length > 1 ? `<div class="gallery__thumbs">${thumbsHtml}</div>` : ''}
+        </div>
+
+        <div class="info">
+          <p class="info__eyebrow">Arquivo 90</p>
+          <h1 class="info__title">${p.name}</h1>
+          ${p.subtitle ? `<p class="info__sub">${p.subtitle}</p>` : ''}
+          <p class="info__price">${fmt(p.price)}</p>
+
+          ${sizes.length ? `
+          <div style="margin-bottom:2rem">
+            <p class="info__section-label">Tamanho</p>
+            <div class="size-selector" id="size-selector">${sizesHtml}</div>
+            ${availSizes.length > 0 ? '' : '<p style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--error);margin-top:0.75rem">Esgotado</p>'}
+          </div>` : ''}
+
+          <button class="btn btn--primary btn--full" id="btn-buy" ${availSizes.length === 0 ? 'disabled' : ''}>
+            ${availSizes.length === 0 ? 'Esgotado' : 'Adicionar ao carrinho'}
+          </button>
+
+          ${p.description ? `
+          <hr class="divider">
+          <p style="font-style:italic;color:var(--ink-mid);font-size:0.95rem;line-height:1.75">${p.description}</p>
+          ` : ''}
+
+          <hr class="divider">
+          <div class="info__specs">
+            <span>Algodão 210g</span>
+            <span>DTF 300dpi</span>
+            <span>Fio 30.1 penteado</span>
+            <span>Costura dupla</span>
+          </div>
+        </div>`;
+
+      // ── Gallery thumbs ──
+      document.querySelectorAll('.gallery__thumb').forEach((th, i) => {
+        th.addEventListener('click', () => setMainImage(i));
+      });
+
+      // ── Size selection ──
+      let selectedSize = null;
+      document.querySelectorAll('.size-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedSize = btn.dataset.size;
+        });
+      });
+
+      // ── Add to cart ──
+      document.getElementById('btn-buy')?.addEventListener('click', () => {
+        if (!selectedSize) { toast('Selecione um tamanho', 'error'); return; }
+
+        const coverImg = _images.find(i => i.type === 'front') || _images[0];
+        addItem({
+          product_id:   p.id,
+          product_name: p.name,
+          slug:         p.slug,
+          size:         selectedSize,
+          quantity:     1,
+          unit_price:   p.price,
+          image:        coverImg?.url || ''
+        });
+
+        toast('Adicionado ao carrinho', 'success');
+        setTimeout(() => openCart(), 400);
+      });
+    }
+
+    load();
+  </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido confirmado — Arquivo 90</title>
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="nav scrolled">
+    <a href="/" class="nav__brand">A R Q U I V O &nbsp; 9 0</a>
+  </nav>
+
+  <div class="container--narrow" style="padding-top:10rem;padding-bottom:6rem;text-align:center">
+    <div id="content">
+      <div class="spinner" style="margin:0 auto 2rem"></div>
+      <p style="color:var(--ink-mid)">Verificando pagamento...</p>
+    </div>
+  </div>
+
+  <script type="module">
+    const params  = new URLSearchParams(location.search);
+    const orderId = params.get('order');
+    const status  = params.get('status'); // 'pendente' se MP retornou pending
+    const el      = document.getElementById('content');
+
+    if (!orderId) {
+      el.innerHTML = `
+        <h1 style="margin-bottom:1rem">Obrigado!</h1>
+        <p style="color:var(--ink-mid);margin-bottom:2rem">Seu pedido foi recebido. Em breve você receberá uma confirmação por email.</p>
+        <a href="/" class="btn">Ver mais produtos</a>`;
+      return;
+    }
+
+    if (status === 'pendente') {
+      el.innerHTML = `
+        <p class="badge" style="margin-bottom:1.5rem">Pagamento pendente</p>
+        <h1 style="margin-bottom:1rem">Quase lá</h1>
+        <p style="color:var(--ink-mid);margin-bottom:0.5rem">Seu pagamento está sendo processado.</p>
+        <p style="color:var(--ink-mid);margin-bottom:2rem;font-size:0.9rem">Pedido <span style="font-family:var(--font-sc)">#${orderId.slice(-8).toUpperCase()}</span></p>
+        <a href="/" class="btn">Voltar à loja</a>`;
+      return;
+    }
+
+    el.innerHTML = `
+      <p class="badge" style="margin-bottom:1.5rem">Pedido confirmado</p>
+      <h1 style="margin-bottom:1rem">Arquivo registrado.</h1>
+      <p style="color:var(--ink-mid);margin-bottom:0.5rem">Pagamento aprovado. Você receberá a confirmação por email.</p>
+      <p style="color:var(--ink-mid);margin-bottom:2.5rem;font-size:0.9rem">Pedido <span style="font-family:var(--font-sc)">#${orderId.slice(-8).toUpperCase()}</span></p>
+      <a href="/" class="btn btn--primary">Ver mais produtos</a>`;
+  </script>
+</body>
+</html>

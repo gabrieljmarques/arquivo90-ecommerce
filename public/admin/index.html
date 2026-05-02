@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Arquivo 90</title>
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-shell { display: grid; grid-template-columns: 200px 1fr; min-height: 100vh; }
+    .sidebar { border-right: 1px solid var(--border); padding: 2rem 0; position: fixed; top: 0; left: 0; height: 100vh; width: 200px; background: var(--bg); z-index: 50; }
+    .sidebar__brand { font-family: var(--font-sc); font-size: 0.8rem; letter-spacing: 0.15em; padding: 0 1.5rem 2rem; color: var(--ink-mid); }
+    .sidebar__nav a { display: block; padding: 0.65rem 1.5rem; font-family: var(--font-sc); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--ink-mid); transition: color 0.15s, background 0.15s; }
+    .sidebar__nav a:hover, .sidebar__nav a.active { color: var(--ink); background: rgba(255,255,255,0.04); }
+    .sidebar__nav a.active { border-left: 2px solid var(--ink); }
+    .sidebar__footer { position: absolute; bottom: 1.5rem; left: 0; right: 0; padding: 0 1.5rem; }
+    .main { margin-left: 200px; padding: 2.5rem; }
+    .page { display: none; }
+    .page.active { display: block; }
+    /* Login */
+    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { width: 100%; max-width: 360px; }
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2.5rem; }
+    .stat { background: var(--surface); border: 1px solid var(--border); padding: 1.2rem 1.5rem; border-radius: 2px; }
+    .stat__value { font-family: var(--font-sc); font-size: 1.8rem; letter-spacing: 0.02em; }
+    .stat__label { font-family: var(--font-sc); font-size: 0.68rem; letter-spacing: 0.1em; color: var(--ink-mid); margin-top: 0.3rem; }
+    @media (max-width: 900px) { .admin-shell { grid-template-columns: 1fr; } .sidebar { display: none; } .main { margin-left: 0; } .stats { grid-template-columns: repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-box">
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <div style="font-family:var(--font-sc);letter-spacing:0.15em;font-size:1rem;margin-bottom:0.3rem">ARQUIVO 90</div>
+      <div style="color:var(--ink-faint);font-size:0.8rem;font-family:var(--font-sc);letter-spacing:0.1em">PAINEL ADMIN</div>
+    </div>
+    <div id="login-error" style="display:none;color:var(--error);font-size:0.85rem;margin-bottom:1rem;text-align:center"></div>
+    <form id="login-form" style="display:flex;flex-direction:column;gap:1rem">
+      <div class="field">
+        <label class="label">Email</label>
+        <input class="input" type="email" id="l-email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label class="label">Senha</label>
+        <input class="input" type="password" id="l-pass" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn--primary" id="btn-login">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ADMIN SHELL (hidden until logged in) -->
+<div id="admin-shell" class="admin-shell" style="display:none">
+  <aside class="sidebar">
+    <div class="sidebar__brand">A90 &nbsp;ADMIN</div>
+    <nav class="sidebar__nav">
+      <a href="#dashboard" class="active" data-page="dashboard">Dashboard</a>
+      <a href="#pedidos"   data-page="pedidos">Pedidos</a>
+      <a href="#produtos"  data-page="produtos">Produtos</a>
+      <a href="#estoque"   data-page="estoque">Estoque</a>
+    </nav>
+    <div class="sidebar__footer">
+      <button class="btn btn--ghost btn--full" id="btn-logout" style="font-size:0.72rem;padding:0.6rem">Sair</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <h2 style="margin-bottom:2rem">Dashboard</h2>
+      <div class="stats" id="stats">
+        <div class="stat"><div class="stat__value" id="s-pedidos">—</div><div class="stat__label">Pedidos hoje</div></div>
+        <div class="stat"><div class="stat__value" id="s-faturamento">—</div><div class="stat__label">Faturamento hoje</div></div>
+        <div class="stat"><div class="stat__value" id="s-pendentes">—</div><div class="stat__label">Aguardando envio</div></div>
+        <div class="stat"><div class="stat__value" id="s-estoque">—</div><div class="stat__label">Itens em estoque</div></div>
+      </div>
+      <h3 style="margin-bottom:1rem;font-size:0.9rem;letter-spacing:0.05em">Pedidos recentes</h3>
+      <div class="card"><table class="table" id="dash-orders"><tr><td style="color:var(--ink-mid);padding:1.5rem">Carregando...</td></tr></table></div>
+    </div>
+
+    <!-- Pedidos -->
+    <div class="page" id="page-pedidos">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+        <h2>Pedidos</h2>
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+          <select class="select" id="filter-status" style="width:auto;padding:0.5rem 0.8rem;font-size:0.8rem">
+            <option value="">Todos</option>
+            <option value="pending">Pendente</option>
+            <option value="paid">Pago</option>
+            <option value="preparing">Preparando</option>
+            <option value="shipped">Enviado</option>
+            <option value="delivered">Entregue</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+          <input class="input" id="filter-search" placeholder="Email ou nome..." style="max-width:220px;padding:0.5rem 0.8rem;font-size:0.8rem">
+        </div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Pedido</th><th>Cliente</th><th>Total</th><th>Status</th><th>Data</th><th></th></tr></thead>
+          <tbody id="orders-tbody"><tr><td colspan="6" style="color:var(--ink-mid)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+      <div id="orders-pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem"></div>
+    </div>
+
+    <!-- Produtos -->
+    <div class="page" id="page-produtos">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem">
+        <h2>Produtos</h2>
+        <button class="btn btn--primary" id="btn-new-product" style="font-size:0.78rem;padding:0.7rem 1.4rem">+ Novo produto</button>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Produto</th><th>Preço</th><th>Status</th><th>Ordem</th><th></th></tr></thead>
+          <tbody id="products-tbody"><tr><td colspan="5" style="color:var(--ink-mid)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Estoque -->
+    <div class="page" id="page-estoque">
+      <h2 style="margin-bottom:2rem">Estoque</h2>
+      <div class="card">
+        <table class="table">
+          <thead><tr><th>Produto</th><th>Tamanho</th><th>Disponível</th><th>Reservado</th><th>Total</th><th></th></tr></thead>
+          <tbody id="stock-tbody"><tr><td colspan="6" style="color:var(--ink-mid)">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal genérico -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);padding:2rem;border-radius:2px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;margin:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+      <h3 id="modal-title" style="font-size:1rem"></h3>
+      <button id="modal-close" style="background:none;border:none;color:var(--ink-mid);cursor:pointer;font-size:1.2rem">&times;</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+  // Busca credenciais públicas do backend — nenhum valor hardcoded no HTML
+  const cfg = await fetch('/api/site-config').then(r => r.json());
+  const sb  = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+  let session = null;
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  async function checkSession() {
+    const { data } = await sb.auth.getSession();
+    return data.session;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    const err = document.getElementById('login-error');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    err.style.display = 'none';
+
+    const { data, error } = await sb.auth.signInWithPassword({
+      email:    document.getElementById('l-email').value.trim(),
+      password: document.getElementById('l-pass').value
+    });
+
+    if (error || !data.session) {
+      err.textContent = 'Email ou senha incorretos.';
+      err.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Entrar';
+      return;
+    }
+
+    session = data.session;
+    showAdmin();
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    location.reload();
+  });
+
+  async function init() {
+    session = await checkSession();
+    if (session) showAdmin();
+  }
+
+  function showAdmin() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-shell').style.display  = 'grid';
+    loadDashboard();
+    loadOrders();
+    loadProducts();
+    loadStock();
+  }
+
+  // ── NAVIGATION ────────────────────────────────────────────────────────────
+  document.querySelectorAll('.sidebar__nav a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const page = a.dataset.page;
+      document.querySelectorAll('.sidebar__nav a').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+      document.getElementById(`page-${page}`).classList.add('active');
+    });
+  });
+
+  function authHeaders() {
+    return { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' };
+  }
+
+  async function api(path, opts = {}) {
+    const r = await fetch(`/api${path}`, { ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) } });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    return d;
+  }
+
+  // ── DASHBOARD ─────────────────────────────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const { orders } = await api('/admin/orders?page=1');
+      const today = new Date().toISOString().slice(0,10);
+      const todayOrders = orders.filter(o => o.created_at.startsWith(today));
+      const paid        = todayOrders.filter(o => o.status === 'paid');
+      const revenue     = paid.reduce((s,o) => s + parseFloat(o.total), 0);
+      const pending     = orders.filter(o => ['paid','preparing'].includes(o.status)).length;
+
+      document.getElementById('s-pedidos').textContent     = todayOrders.length;
+      document.getElementById('s-faturamento').textContent = `R$ ${revenue.toFixed(0)}`;
+      document.getElementById('s-pendentes').textContent   = pending;
+
+      const tbody = document.getElementById('dash-orders');
+      tbody.innerHTML = orders.slice(0,5).map(o => `
+        <tr>
+          <td style="font-family:var(--font-sc);font-size:0.8rem">#${o.id.slice(-8).toUpperCase()}</td>
+          <td>${o.customer_name}</td>
+          <td style="font-family:var(--font-sc)">R$ ${parseFloat(o.total).toFixed(2)}</td>
+          <td><span class="status status--${o.status}">${o.status}</span></td>
+          <td style="color:var(--ink-mid);font-size:0.8rem">${new Date(o.created_at).toLocaleDateString('pt-BR')}</td>
+          <td><button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="openOrder('${o.id}')">Ver</button></td>
+        </tr>`).join('') || '<tr><td colspan="6" style="color:var(--ink-mid)">Nenhum pedido</td></tr>';
+    } catch(e) { console.error(e); }
+  }
+
+  // ── PEDIDOS ───────────────────────────────────────────────────────────────
+  let ordersPage = 1;
+
+  async function loadOrders(page = 1) {
+    ordersPage = page;
+    const status = document.getElementById('filter-status')?.value || '';
+    const q      = document.getElementById('filter-search')?.value || '';
+    try {
+      const params = new URLSearchParams({ page, ...(status && { status }), ...(q && { q }) });
+      const { orders, pages, total } = await api(`/admin/orders?${params}`);
+      const tbody = document.getElementById('orders-tbody');
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td style="font-family:var(--font-sc);font-size:0.8rem">#${o.id.slice(-8).toUpperCase()}</td>
+          <td><div>${o.customer_name}</div><div style="color:var(--ink-mid);font-size:0.78rem">${o.customer_email}</div></td>
+          <td style="font-family:var(--font-sc)">R$ ${parseFloat(o.total).toFixed(2)}</td>
+          <td><span class="status status--${o.status}">${o.status}</span></td>
+          <td style="color:var(--ink-mid);font-size:0.8rem">${new Date(o.created_at).toLocaleDateString('pt-BR')}</td>
+          <td><button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="openOrder('${o.id}')">Editar</button></td>
+        </tr>`).join('') || '<tr><td colspan="6" style="color:var(--ink-mid)">Nenhum pedido encontrado</td></tr>';
+
+      const pag = document.getElementById('orders-pagination');
+      pag.innerHTML = Array.from({ length: pages }, (_, i) =>
+        `<button class="btn ${i+1===page?'btn--primary':'btn--ghost'}" style="padding:0.4rem 0.8rem;font-size:0.75rem" onclick="loadOrders(${i+1})">${i+1}</button>`
+      ).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  document.getElementById('filter-status')?.addEventListener('change', () => loadOrders(1));
+  document.getElementById('filter-search')?.addEventListener('input',  () => loadOrders(1));
+  window.loadOrders = loadOrders;
+
+  window.openOrder = async (id) => {
+    const { order } = await api(`/admin/orders/${id}`);
+    const STATUSES = ['pending','paid','preparing','shipped','delivered','cancelled','refunded'];
+    showModal(`Pedido #${id.slice(-8).toUpperCase()}`, `
+      <div style="display:grid;gap:0.8rem;margin-bottom:1.5rem;font-size:0.9rem">
+        <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
+        <div><span style="color:var(--ink-mid)">Total:</span> R$ ${parseFloat(order.total).toFixed(2)}</div>
+        <div><span style="color:var(--ink-mid)">Endereço:</span> ${order.shipping_address?.rua}, ${order.shipping_address?.numero} — ${order.shipping_address?.cidade}/${order.shipping_address?.estado}</div>
+        <div><span style="color:var(--ink-mid)">Itens:</span> ${(order.order_items||[]).map(i=>`${i.product_name} ${i.size} x${i.quantity}`).join(', ')}</div>
+      </div>
+      <div style="display:grid;gap:1rem">
+        <div class="field">
+          <label class="label">Status</label>
+          <select class="select" id="o-status">${STATUSES.map(s=>`<option value="${s}" ${s===order.status?'selected':''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field">
+          <label class="label">Código de rastreio</label>
+          <input class="input" id="o-tracking" value="${order.tracking_code||''}" placeholder="BR123456789BR">
+        </div>
+        <div class="field">
+          <label class="label">Transportadora</label>
+          <input class="input" id="o-carrier" value="${order.carrier||''}" placeholder="Correios, Jadlog...">
+        </div>
+        <div class="field">
+          <label class="label">Notas internas</label>
+          <textarea class="textarea" id="o-notes" style="min-height:60px">${order.notes||''}</textarea>
+        </div>
+        <button class="btn btn--primary" onclick="saveOrder('${id}')">Salvar</button>
+      </div>`);
+  };
+
+  window.saveOrder = async (id) => {
+    try {
+      await api(`/admin/orders/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          status:        document.getElementById('o-status').value,
+          tracking_code: document.getElementById('o-tracking').value,
+          carrier:       document.getElementById('o-carrier').value,
+          notes:         document.getElementById('o-notes').value
+        })
+      });
+      closeModal();
+      loadOrders(ordersPage);
+      loadDashboard();
+    } catch(e) { alert(e.message); }
+  };
+
+  // ── PRODUTOS ──────────────────────────────────────────────────────────────
+  async function loadProducts() {
+    try {
+      const { products } = await api('/admin/products');
+      const tbody = document.getElementById('products-tbody');
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td><div style="font-family:var(--font-sc)">${p.name}</div><div style="color:var(--ink-mid);font-size:0.78rem">${p.slug}</div></td>
+          <td style="font-family:var(--font-sc)">R$ ${parseFloat(p.price).toFixed(2)}</td>
+          <td><span class="status status--${p.active?'paid':'cancelled'}">${p.active?'Ativo':'Inativo'}</span></td>
+          <td style="color:var(--ink-mid)">${p.display_order}</td>
+          <td style="display:flex;gap:0.5rem">
+            <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="editProduct('${p.id}')">Editar</button>
+            <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem;color:var(--error)" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Ocultar':'Ativar'}</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="5" style="color:var(--ink-mid)">Nenhum produto</td></tr>';
+    } catch(e) { console.error(e); }
+  }
+
+  document.getElementById('btn-new-product').addEventListener('click', () => {
+    showModal('Novo produto', productForm(null));
+  });
+
+  window.editProduct = async (id) => {
+    const { product } = await api(`/admin/products/${id}`);
+    showModal(`Editar: ${product.name}`, productForm(product));
+  };
+
+  window.toggleProduct = async (id, active) => {
+    await api(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify({ active: !active }) });
+    loadProducts();
+  };
+
+  function productForm(p) {
+    const sel = (name, opts, val) =>
+      `<select class="input" name="${name}"><option value=""></option>${opts.map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    const tagsVal = Array.isArray(p?.tags) ? p.tags.join(', ') : (p?.tags || '');
+    return `
+      <form id="product-form" style="display:grid;gap:1rem">
+
+        <p class="label" style="letter-spacing:0.12em">Informações básicas</p>
+        <div class="field"><label class="label">Nome *</label><input class="input" name="name" value="${p?.name||''}" required></div>
+        <div class="field"><label class="label">Slug *</label><input class="input" name="slug" value="${p?.slug||''}" placeholder="corinthians-77" required></div>
+        <div class="field"><label class="label">SKU</label><input class="input" name="sku" value="${p?.sku||''}" placeholder="ARQ-001"></div>
+        <div class="field"><label class="label">Subtítulo</label><input class="input" name="subtitle" value="${p?.subtitle||''}"></div>
+        <div class="field"><label class="label">Descrição</label><textarea class="textarea" name="description">${p?.description||''}</textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="field"><label class="label">Preço * (R$)</label><input class="input" name="price" type="number" step="0.01" value="${p?.price||''}" required></div>
+          <div class="field"><label class="label">Peso (gramas)</label><input class="input" name="peso_g" type="number" value="${p?.peso_g||300}" placeholder="300"></div>
+        </div>
+        <div class="field"><label class="label">Ordem vitrine</label><input class="input" name="display_order" type="number" value="${p?.display_order??99}"></div>
+
+        <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Categorização</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="field"><label class="label">Tipo</label>${sel('tipo',['Camiseta','Moletom','Regata','Polo','Jaqueta'],p?.tipo)}</div>
+          <div class="field"><label class="label">Modelagem</label>${sel('modelagem',['Normal','Oversized','Slim'],p?.modelagem)}</div>
+          <div class="field"><label class="label">Gênero</label>${sel('genero',['Unissex','Masculino','Feminino'],p?.genero)}</div>
+          <div class="field"><label class="label">Esporte</label>${sel('esporte',['Futebol','Basquete','Fórmula 1','Tênis','Outros'],p?.esporte)}</div>
+          <div class="field"><label class="label">Subcategoria</label>${sel('subcategoria',['Times Nacionais','Times Internacionais','Seleções','Outros'],p?.subcategoria)}</div>
+          <div class="field"><label class="label">Cor</label><input class="input" name="cor" value="${p?.cor||''}" placeholder="Branco, Preto, Off-white…"></div>
+        </div>
+
+        <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Referência histórica</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="field"><label class="label">Time / Momento</label><input class="input" name="time_ref" value="${p?.time_ref||''}" placeholder="Corinthians 1977"></div>
+          <div class="field"><label class="label">Ano</label><input class="input" name="ano_ref" type="number" value="${p?.ano_ref||''}" placeholder="1977"></div>
+        </div>
+        <div class="field"><label class="label">Tags (separadas por vírgula)</label><input class="input" name="tags" value="${tagsVal}" placeholder="corinthians, paulista, 77"></div>
+
+        <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">SEO</p>
+        <div class="field"><label class="label">Meta title</label><input class="input" name="meta_title" value="${p?.meta_title||''}" placeholder="${p?.name||''}"></div>
+        <div class="field"><label class="label">Meta description</label><input class="input" name="meta_description" value="${p?.meta_description||''}"></div>
+
+        <div style="display:flex;gap:1.5rem;margin-top:0.5rem">
+          <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-family:var(--font-sc);font-size:0.78rem;letter-spacing:0.08em">
+            <input type="checkbox" name="active" ${p?.active?'checked':''}> ATIVO
+          </label>
+          <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-family:var(--font-sc);font-size:0.78rem;letter-spacing:0.08em">
+            <input type="checkbox" name="featured" ${p?.featured?'checked':''}> DESTAQUE
+          </label>
+        </div>
+        <button type="submit" class="btn btn--primary">${p ? 'Salvar alterações' : 'Criar produto'}</button>
+      </form>`;
+  }
+
+  document.getElementById('modal-body').addEventListener('submit', async e => {
+    if (e.target.id !== 'product-form') return;
+    e.preventDefault();
+    const f = e.target;
+    const id = document.getElementById('modal-title').dataset.id;
+    const tagsRaw = f.tags.value.trim();
+    const body = {
+      name:             f.name.value,
+      slug:             f.slug.value,
+      sku:              f.sku.value || null,
+      subtitle:         f.subtitle.value,
+      description:      f.description.value,
+      price:            parseFloat(f.price.value),
+      peso_g:           f.peso_g.value ? parseInt(f.peso_g.value, 10) : null,
+      display_order:    parseInt(f.display_order.value, 10),
+      tipo:             f.tipo.value || null,
+      modelagem:        f.modelagem.value || null,
+      genero:           f.genero.value || null,
+      esporte:          f.esporte.value || null,
+      subcategoria:     f.subcategoria.value || null,
+      cor:              f.cor.value || null,
+      time_ref:         f.time_ref.value || null,
+      ano_ref:          f.ano_ref.value ? parseInt(f.ano_ref.value, 10) : null,
+      tags:             tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
+      meta_title:       f.meta_title.value || null,
+      meta_description: f.meta_description.value || null,
+      active:           f.active.checked,
+      featured:         f.featured.checked
+    };
+    try {
+      if (id) {
+        await api(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      } else {
+        await api('/admin/products', { method: 'POST', body: JSON.stringify(body) });
+      }
+      closeModal();
+      loadProducts();
+    } catch(err) { alert(err.message); }
+  });
+
+  // ── ESTOQUE ───────────────────────────────────────────────────────────────
+  async function loadStock() {
+    try {
+      const { stock } = await api('/admin/stock');
+      document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
+      const tbody = document.getElementById('stock-tbody');
+      tbody.innerHTML = stock.map(s => `
+        <tr>
+          <td style="font-family:var(--font-sc);font-size:0.9rem">${s.products.name}</td>
+          <td style="font-family:var(--font-sc)">${s.size}</td>
+          <td>${Math.max(0, s.stock - s.reserved)}</td>
+          <td style="color:${s.reserved>0?'var(--error)':'var(--ink-mid)'}">${s.reserved}</td>
+          <td>${s.stock}</td>
+          <td><button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="editStock('${s.id}','${s.products.name}','${s.size}',${s.stock})">Ajustar</button></td>
+        </tr>`).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  window.editStock = (id, name, size, current) => {
+    showModal(`Estoque: ${name} — ${size}`, `
+      <div style="margin-bottom:1.5rem;font-size:0.9rem;color:var(--ink-mid)">Estoque atual: <strong style="color:var(--ink)">${current}</strong></div>
+      <div class="field" style="margin-bottom:1rem">
+        <label class="label">Novo total em estoque</label>
+        <input class="input" id="s-new" type="number" min="0" value="${current}">
+      </div>
+      <div class="field" style="margin-bottom:1.5rem">
+        <label class="label">Motivo</label>
+        <select class="select" id="s-reason">
+          <option value="restock">Reposição</option>
+          <option value="adjustment">Ajuste</option>
+          <option value="refund">Devolução</option>
+        </select>
+      </div>
+      <button class="btn btn--primary btn--full" onclick="saveStock('${id}')">Salvar</button>`);
+  };
+
+  window.saveStock = async (id) => {
+    try {
+      await api('/admin/stock', {
+        method: 'PUT',
+        body: JSON.stringify({ product_size_id: id, new_stock: parseInt(document.getElementById('s-new').value, 10), reason: document.getElementById('s-reason').value })
+      });
+      closeModal();
+      loadStock();
+    } catch(e) { alert(e.message); }
+  };
+
+  // ── MODAL ─────────────────────────────────────────────────────────────────
+  function showModal(title, body, id = null) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-title').dataset.id  = id || '';
+    document.getElementById('modal-body').innerHTML    = body;
+    document.getElementById('modal').style.display     = 'flex';
+  }
+  function closeModal() { document.getElementById('modal').style.display = 'none'; }
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+
+  window.openOrder = window.openOrder;
+  init();
+</script>
+</body>
+</html>

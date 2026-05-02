@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Arquivo 90</title>
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 4rem; padding-top: 7rem; padding-bottom: 5rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .summary { position: sticky; top: 7rem; }
+    .summary-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+    .summary-item:last-of-type { border-bottom: none; }
+    .summary-total { display: flex; justify-content: space-between; padding: 1.2rem 0 0; font-family: var(--font-sc); letter-spacing: 0.05em; }
+    @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 6rem; } .summary { position: static; } }
+  </style>
+</head>
+<body>
+  <nav class="nav scrolled">
+    <a href="/" class="nav__brand">A R Q U I V O &nbsp; 9 0</a>
+    <div class="nav__links"><a href="/">← Continuar comprando</a></div>
+  </nav>
+
+  <div class="container checkout-layout">
+    <!-- Formulário -->
+    <div>
+      <h2 style="margin-bottom:2rem">Finalizar pedido</h2>
+
+      <div id="error-banner" style="display:none;background:rgba(200,87,74,0.1);border:1px solid var(--error);color:var(--error);padding:0.75rem 1rem;border-radius:2px;margin-bottom:1.5rem;font-size:0.9rem;"></div>
+
+      <form id="checkout-form" novalidate>
+        <div style="margin-bottom:2rem">
+          <h3 style="margin-bottom:1.2rem;font-size:1rem;letter-spacing:0.05em">Dados pessoais</h3>
+          <div class="form-grid">
+            <div class="field full">
+              <label class="label">Nome completo *</label>
+              <input class="input" name="name" type="text" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label class="label">Email *</label>
+              <input class="input" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label class="label">WhatsApp</label>
+              <input class="input" name="phone" type="tel" autocomplete="tel" placeholder="(11) 99999-9999">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:2rem">
+          <h3 style="margin-bottom:1.2rem;font-size:1rem;letter-spacing:0.05em">Endereço de entrega</h3>
+          <div class="form-grid">
+            <div class="field">
+              <label class="label">CEP *</label>
+              <input class="input" name="cep" type="text" maxlength="9" placeholder="00000-000" required>
+            </div>
+            <div class="field" style="align-self:end">
+              <button type="button" class="btn btn--ghost" id="btn-cep" style="padding:0.75rem 1.2rem;font-size:0.75rem">Buscar CEP</button>
+            </div>
+            <div class="field full">
+              <label class="label">Rua *</label>
+              <input class="input" name="rua" type="text" required>
+            </div>
+            <div class="field" style="max-width:140px">
+              <label class="label">Número *</label>
+              <input class="input" name="numero" type="text" required>
+            </div>
+            <div class="field">
+              <label class="label">Complemento</label>
+              <input class="input" name="complemento" type="text">
+            </div>
+            <div class="field">
+              <label class="label">Bairro *</label>
+              <input class="input" name="bairro" type="text" required>
+            </div>
+            <div class="field">
+              <label class="label">Cidade *</label>
+              <input class="input" name="cidade" type="text" required>
+            </div>
+            <div class="field" style="max-width:120px">
+              <label class="label">Estado *</label>
+              <input class="input" name="estado" type="text" maxlength="2" placeholder="SP" required>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--full" id="btn-submit">
+          Ir para pagamento
+        </button>
+        <p style="text-align:center;color:var(--ink-faint);font-size:0.8rem;margin-top:1rem">
+          Pagamento 100% seguro via Mercado Pago
+        </p>
+      </form>
+    </div>
+
+    <!-- Resumo -->
+    <div class="summary">
+      <h3 style="margin-bottom:1.5rem;font-size:1rem;letter-spacing:0.05em">Resumo do pedido</h3>
+      <div id="cart-summary">
+        <p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio.</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getCart, clearCart, removeFromCart, createPayment, fmt, toast, setLoading } from '/js/api.js';
+
+    const SHIPPING = 25;
+    let cart = getCart();
+
+    function renderSummary() {
+      const el = document.getElementById('cart-summary');
+      if (!cart.length) {
+        el.innerHTML = '<p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio. <a href="/" style="color:var(--ink)">Ver produtos</a></p>';
+        return;
+      }
+      const subtotal = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+      const total    = subtotal + SHIPPING;
+      el.innerHTML = `
+        ${cart.map(i => `
+          <div class="summary-item">
+            <div>
+              <div style="font-family:var(--font-sc);font-size:0.9rem">${i.product_name}</div>
+              <div style="color:var(--ink-mid);font-size:0.8rem;margin-top:0.2rem">Tamanho ${i.size} &bull; Qtd ${i.quantity}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
+              <span style="font-family:var(--font-sc);font-size:0.9rem">${fmt(i.unit_price * i.quantity)}</span>
+              <button onclick="removeItem('${i.product_id}','${i.size}')" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.75rem;font-family:var(--font-sc);letter-spacing:0.05em">remover</button>
+            </div>
+          </div>`).join('')}
+        <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem">
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.5rem">
+            <span>Subtotal</span><span>${fmt(subtotal)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.8rem">
+            <span>Frete</span><span>${fmt(SHIPPING)}</span>
+          </div>
+          <div class="summary-total"><span>Total</span><span>${fmt(total)}</span></div>
+        </div>`;
+    }
+
+    window.removeItem = (product_id, size) => {
+      cart = removeFromCart(product_id, size);
+      renderSummary();
+    };
+
+    renderSummary();
+
+    // Busca CEP via ViaCEP
+    document.getElementById('btn-cep').addEventListener('click', async () => {
+      const cep = document.querySelector('[name=cep]').value.replace(/\D/g,'');
+      if (cep.length !== 8) { toast('CEP inválido', 'error'); return; }
+      try {
+        const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const d = await r.json();
+        if (d.erro) { toast('CEP não encontrado', 'error'); return; }
+        document.querySelector('[name=rua]').value    = d.logradouro || '';
+        document.querySelector('[name=bairro]').value = d.bairro     || '';
+        document.querySelector('[name=cidade]').value = d.localidade || '';
+        document.querySelector('[name=estado]').value = d.uf         || '';
+      } catch { toast('Erro ao buscar CEP', 'error'); }
+    });
+
+    // Máscara CEP
+    document.querySelector('[name=cep]').addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g,'').replace(/(\d{5})(\d)/, '$1-$2').slice(0,9);
+    });
+
+    // Submit
+    document.getElementById('checkout-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!cart.length) { toast('Carrinho vazio', 'error'); return; }
+
+      const btn = document.getElementById('btn-submit');
+      const errBanner = document.getElementById('error-banner');
+      errBanner.style.display = 'none';
+
+      const f = e.target;
+      const customer = {
+        name:  f.name.value.trim(),
+        email: f.email.value.trim(),
+        phone: f.phone.value.trim() || null
+      };
+      const shippingAddress = {
+        cep:         f.cep.value.replace(/\D/g,''),
+        rua:         f.rua.value.trim(),
+        numero:      f.numero.value.trim(),
+        complemento: f.complemento.value.trim() || null,
+        bairro:      f.bairro.value.trim(),
+        cidade:      f.cidade.value.trim(),
+        estado:      f.estado.value.trim().toUpperCase()
+      };
+
+      const items = cart.map(i => ({
+        product_id: i.product_id,
+        size:       i.size,
+        quantity:   i.quantity
+      }));
+
+      setLoading(btn, true);
+      try {
+        const { init_point } = await createPayment({ items, customer, shippingAddress });
+        clearCart();
+        window.location.href = init_point;
+      } catch (err) {
+        errBanner.textContent = err.message;
+        errBanner.style.display = 'block';
+        setLoading(btn, false);
+      }
+    });
+
+    // Mostrar erro de URL se vier redirecionado pelo MP
+    const params = new URLSearchParams(location.search);
+    if (params.get('erro')) {
+      document.getElementById('error-banner').textContent = 'Pagamento não aprovado. Tente novamente.';
+      document.getElementById('error-banner').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
