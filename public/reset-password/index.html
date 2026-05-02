@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redefinir senha — Arquivo 90</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100svh; }
+    .box { width: 100%; max-width: 380px; padding: 2.5rem; border: 1px solid var(--border); }
+    .box h1 { font-family: var(--font-sc); font-size: 1.1rem; letter-spacing: 0.1em; margin-bottom: 1.5rem; }
+    .msg { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.06em; margin-top: 1rem; }
+    .msg.error { color: var(--error, #c0392b); }
+    .msg.success { color: #2d6a4f; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Nova senha</h1>
+    <form id="form" style="display:grid;gap:1rem">
+      <div class="field">
+        <label class="label">Nova senha</label>
+        <input class="input" type="password" id="password" minlength="8" required placeholder="mínimo 8 caracteres">
+      </div>
+      <div class="field">
+        <label class="label">Confirmar senha</label>
+        <input class="input" type="password" id="confirm" required>
+      </div>
+      <button type="submit" class="btn btn--primary">Salvar nova senha</button>
+    </form>
+    <p class="msg" id="msg"></p>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const cfg = await fetch('/api/site-config').then(r => r.json());
+    const sb  = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+    // Supabase coloca o token no hash da URL após o clique no email
+    const hash   = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+    const msg    = document.getElementById('msg');
+
+    if (hash.error) {
+      msg.textContent = 'Link inválido ou expirado. Solicite um novo email de recuperação.';
+      msg.className = 'msg error';
+      document.getElementById('form').style.display = 'none';
+    }
+
+    document.getElementById('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const pw  = document.getElementById('password').value;
+      const cfm = document.getElementById('confirm').value;
+
+      if (pw !== cfm) {
+        msg.textContent = 'As senhas não coincidem.';
+        msg.className = 'msg error';
+        return;
+      }
+
+      const { error } = await sb.auth.updateUser({ password: pw });
+      if (error) {
+        msg.textContent = error.message;
+        msg.className = 'msg error';
+        return;
+      }
+
+      msg.textContent = 'Senha redefinida. Redirecionando...';
+      msg.className = 'msg success';
+      setTimeout(() => location.href = '/admin', 1500);
+    });
+  </script>
+</body>
+</html>
