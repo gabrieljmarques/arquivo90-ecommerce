@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       .from('products')
       .select(`
         id, slug, name, subtitle, description, price,
-        product_images(url, type, display_order),
+        product_images(url, type, display_order, color),
         product_sizes(size, color, stock, reserved)
       `)
       .eq('slug', slug)

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Arquivo 90</title>
   <link rel="icon" href="/img/favicon.ico">
-  <link rel="stylesheet" href="/css/admin.css?v=3">
+  <link rel="stylesheet" href="/css/admin.css?v=4">
 </head>
 <body>
 
@@ -481,7 +481,19 @@
         <div class="field"><label class="label">Slug *</label><input class="input" name="slug" value="${p?.slug||''}" placeholder="corinthians-77" required></div>
         <div class="field"><label class="label">SKU</label><input class="input" name="sku" value="${p?.sku||''}" placeholder="ARQ-001"></div>
         <div class="field"><label class="label">Subtítulo</label><input class="input" name="subtitle" value="${p?.subtitle||''}"></div>
-        <div class="field"><label class="label">Descrição</label><textarea class="textarea" name="description">${p?.description||''}</textarea></div>
+        <div class="field">
+          <label class="label">Descrição</label>
+          <div class="rte-toolbar">
+            <button type="button" onclick="rte('bold')"><b>N</b></button>
+            <button type="button" onclick="rte('italic')"><i>I</i></button>
+            <button type="button" onclick="rteHeading()">H3</button>
+            <button type="button" onclick="rte('insertUnorderedList')">Lista</button>
+            <button type="button" onclick="rteImg()">Imagem</button>
+            <button type="button" onclick="rteTable()">Tabela</button>
+          </div>
+          <div id="rte-body" class="rte-body" contenteditable="true" data-initial="${encodeURIComponent(p?.description||'')}"></div>
+          <input type="hidden" name="description" id="rte-hidden">
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
           <div class="field"><label class="label">Preço * (R$)</label><input class="input" name="price" type="number" step="0.01" value="${p?.price ? (p.price/100).toFixed(2) : ''}" required></div>
           <div class="field"><label class="label">Peso (gramas)</label><input class="input" name="peso_g" type="number" value="${p?.peso_g||300}" placeholder="300"></div>
@@ -489,11 +501,28 @@
         <div class="field"><label class="label">Ordem vitrine</label><input class="input" name="display_order" type="number" value="${p?.display_order??99}"></div>
 
         <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Variantes de cor</p>
-        <div class="field">
-          <label class="label">Cores disponíveis (separadas por vírgula)</label>
-          <input class="input" name="colors" value="${p?.colors_list||''}" placeholder="Preto, Branco, Off-White">
-          <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-mid);margin-top:0.3rem;display:block">Cada cor cria um conjunto P/M/G/GG de estoque. Deixe vazio para produto sem variação de cor.</span>
-        </div>
+        ${(() => {
+          if (p) {
+            const existing = [...new Set((p.product_sizes||[]).map(s => s.color).filter(Boolean))];
+            return `<div class="field">
+              <label class="label">Cores existentes (gerenciadas via Estoque)</label>
+              <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem">
+                ${existing.map(c => `<span class="color-chip">${c}</span>`).join('')}
+                ${existing.length === 0 ? '<span style="color:var(--ink-faint);font-size:0.8rem;font-family:var(--font-mono)">Sem variações de cor</span>' : ''}
+              </div>
+              <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-faint);margin-top:0.4rem;display:block">Para adicionar novas cores acesse a aba Estoque.</span>
+            </div>`;
+          }
+          const PRESET = ['Preto','Branco','Off-White','Marrom','Cinza','Azul','Vermelho','Verde'];
+          return `<div class="field">
+            <label class="label">Cores (cria variantes P/M/G/GG por cor selecionada)</label>
+            <div class="color-checkboxes" style="margin-top:0.25rem">
+              ${PRESET.map(c => `<label class="color-check-label"><input type="checkbox" data-color="${c}"> ${c}</label>`).join('')}
+            </div>
+            <input class="input" id="custom-color" style="margin-top:0.5rem" placeholder="Outra cor personalizada (opcional)">
+            <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-mid);margin-top:0.3rem;display:block">Deixe sem seleção para produto sem variação de cor.</span>
+          </div>`;
+        })()}
 
         <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Categorização</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
@@ -533,44 +562,61 @@
 
   function buildImagesHTML(p) {
     if (!p?.id) return `<p style="font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-mid);letter-spacing:0.05em">Salve o produto primeiro para adicionar imagens.</p>`;
-    const imgs = [...(p.product_images||[])].sort((a,b) => a.display_order - b.display_order);
+    const imgs       = [...(p.product_images||[])].sort((a,b) => a.display_order - b.display_order);
+    const colorList  = [...new Set((p.product_sizes||[]).map(s => s.color).filter(Boolean))];
+    const IMG_LABELS = { front:'Frente', back:'Costas', detail:'Detalhe', lifestyle:'Lifestyle', size_chart:'Tab. medidas', gallery:'Galeria' };
     const rows = imgs.map((img, i, arr) => `
       <div class="img-row" data-id="${img.id}" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem;border:1px solid var(--border);margin-bottom:0.4rem">
         <img src="${img.url}" style="width:52px;height:52px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)">
-        <span style="font-family:var(--font-sc);font-size:0.7rem;letter-spacing:0.08em;color:var(--ink-mid);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${img.type}</span>
+        <span style="font-family:var(--font-sc);font-size:0.7rem;letter-spacing:0.08em;color:var(--ink-mid)">${IMG_LABELS[img.type]||img.type}</span>
+        ${img.color ? `<span class="color-chip">${img.color}</span>` : ''}
+        <span style="flex:1"></span>
         <button type="button" onclick="moveImg('${img.id}',-1)" ${i===0?'disabled':''} style="background:none;border:1px solid var(--border);padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;color:var(--ink);line-height:1">↑</button>
         <button type="button" onclick="moveImg('${img.id}',1)" ${i===arr.length-1?'disabled':''} style="background:none;border:1px solid var(--border);padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;color:var(--ink);line-height:1">↓</button>
         <button type="button" onclick="deleteImg('${img.id}')" style="background:none;border:none;padding:0.2rem 0.5rem;cursor:pointer;font-size:1.1rem;color:var(--error);line-height:1">×</button>
       </div>`).join('');
+    const colorSelect = colorList.length > 0
+      ? `<select id="new-img-color" style="padding:0.45rem 0.6rem;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:0.78rem;font-family:var(--font-sc);letter-spacing:0.05em">
+          <option value="">Sem cor</option>
+          ${colorList.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>`
+      : '';
     return `
       <div id="images-list">${rows}</div>
       <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-top:0.5rem">
         <select id="new-img-type" style="padding:0.45rem 0.6rem;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:0.78rem;font-family:var(--font-sc);letter-spacing:0.05em">
-          <option value="front">front</option>
-          <option value="back">back</option>
-          <option value="detail">detail</option>
+          <option value="front">Frente</option>
+          <option value="back">Costas</option>
+          <option value="detail">Detalhe</option>
+          <option value="lifestyle">Lifestyle</option>
+          <option value="size_chart">Tab. medidas</option>
+          <option value="gallery">Galeria</option>
         </select>
+        ${colorSelect}
         <input type="file" id="new-img-file" accept="image/jpeg,image/png,image/webp" style="flex:1;min-width:0;font-size:0.78rem">
         <button type="button" onclick="addImg('${p.id}')" class="btn btn--primary" style="padding:0.5rem 1rem;font-size:0.78rem;white-space:nowrap">Adicionar</button>
       </div>`;
   }
 
   window.addImg = async (productId) => {
-    const file = document.getElementById('new-img-file')?.files?.[0];
-    const type = document.getElementById('new-img-type')?.value || 'front';
+    const file  = document.getElementById('new-img-file')?.files?.[0];
+    const type  = document.getElementById('new-img-type')?.value  || 'front';
+    const color = document.getElementById('new-img-color')?.value || null;
     if (!file) { alert('Selecione uma imagem'); return; }
     const btn = document.querySelector(`button[onclick="addImg('${productId}')"]`);
     if (btn) { btn.disabled = true; btn.textContent = '...'; }
     try {
-      const ext  = file.name.split('.').pop().toLowerCase();
-      const path = `${productId}-${Date.now()}.${ext}`;
-      const { error: upErr } = await sb.storage.from('product-images').upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) { alert('Erro ao enviar: ' + upErr.message); return; }
-      const url  = sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+      // Server generates a signed URL using the service role key (bypasses storage RLS)
+      const { signedUrl, publicUrl } = await api('/admin/upload-token', {
+        method: 'POST',
+        body: JSON.stringify({ filename: file.name })
+      });
+      const upRes = await fetch(signedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!upRes.ok) throw new Error('Erro ao enviar imagem (status ' + upRes.status + ')');
       const existing = document.querySelectorAll('#images-list .img-row').length;
       await api(`/admin/products?id=${productId}&sub=images`, {
         method: 'POST',
-        body: JSON.stringify({ url, type, display_order: existing })
+        body: JSON.stringify({ url: publicUrl, type, color: color || null, display_order: existing })
       });
       await editProduct(productId);
     } catch(e) { alert(e.message); if (btn) { btn.disabled = false; btn.textContent = 'Adicionar'; } }
@@ -605,16 +651,30 @@
   document.getElementById('modal-body').addEventListener('submit', async e => {
     if (e.target.id !== 'product-form') return;
     e.preventDefault();
-    const f = e.target;
+    const f  = e.target;
     const id = document.getElementById('modal-title').dataset.id;
-    const tagsRaw = f.tags.value.trim();
 
+    // Sync RTE → hidden input
+    const rteBody = document.getElementById('rte-body');
+    if (rteBody) {
+      const h = document.getElementById('rte-hidden');
+      if (h) h.value = rteBody.innerHTML.trim();
+    }
+
+    // Collect colors from checkboxes (create mode only)
+    const colorBoxes = [...f.querySelectorAll('[data-color]')].filter(cb => cb.checked);
+    const customClr  = f.querySelector('#custom-color')?.value?.trim();
+    const colorArr   = colorBoxes.map(cb => cb.dataset.color);
+    if (customClr) colorArr.push(customClr);
+    const colors = colorArr.length > 0 ? colorArr : null;
+
+    const tagsRaw = f.tags.value.trim();
     const body = {
       name:             f.name.value,
       slug:             f.slug.value,
       sku:              f.sku.value || null,
       subtitle:         f.subtitle.value,
-      description:      f.description.value,
+      description:      document.getElementById('rte-hidden')?.value || null,
       price:            Math.round(parseFloat(f.price.value) * 100),
       peso_g:           f.peso_g.value ? parseInt(f.peso_g.value, 10) : null,
       display_order:    parseInt(f.display_order.value, 10),
@@ -631,7 +691,7 @@
       meta_description: f.meta_description.value || null,
       active:           f.active.checked,
       featured:         f.featured.checked,
-      colors:           f.colors?.value?.trim() ? f.colors.value.split(',').map(c => c.trim()).filter(Boolean) : null
+      colors            // only used on create; PUT handler ignores unknown fields
     };
     try {
       if (id) {
@@ -860,7 +920,34 @@
     document.getElementById('modal-title').dataset.id  = id || '';
     document.getElementById('modal-body').innerHTML    = body;
     document.getElementById('modal').style.display     = 'flex';
+    // Init RTE: decode stored HTML into contenteditable
+    const rteEl = document.getElementById('rte-body');
+    if (rteEl?.dataset.initial !== undefined) {
+      rteEl.innerHTML = decodeURIComponent(rteEl.dataset.initial);
+    }
   }
+
+  // ── RICH TEXT EDITOR ──────────────────────────────────────────────────────
+  window.rte = (cmd) => { document.getElementById('rte-body')?.focus(); document.execCommand(cmd, false, null); };
+  window.rteHeading = () => { document.getElementById('rte-body')?.focus(); document.execCommand('formatBlock', false, '<h3>'); };
+  window.rteImg = () => {
+    const url = prompt('URL da imagem:');
+    if (!url?.trim()) return;
+    document.getElementById('rte-body')?.focus();
+    document.execCommand('insertHTML', false, `<img src="${url.trim()}" style="max-width:100%;height:auto;display:block;margin:1rem 0">`);
+  };
+  window.rteTable = () => {
+    const html = `<table style="width:100%;border-collapse:collapse"><thead><tr>
+      <th style="border:1px solid #ccc;padding:0.4rem 0.6rem;background:#eee">Coluna 1</th>
+      <th style="border:1px solid #ccc;padding:0.4rem 0.6rem;background:#eee">Coluna 2</th>
+      <th style="border:1px solid #ccc;padding:0.4rem 0.6rem;background:#eee">Coluna 3</th>
+    </tr></thead><tbody>
+      <tr><td style="border:1px solid #ccc;padding:0.4rem 0.6rem">&nbsp;</td><td style="border:1px solid #ccc;padding:0.4rem 0.6rem">&nbsp;</td><td style="border:1px solid #ccc;padding:0.4rem 0.6rem">&nbsp;</td></tr>
+      <tr><td style="border:1px solid #ccc;padding:0.4rem 0.6rem">&nbsp;</td><td style="border:1px solid #ccc;padding:0.4rem 0.6rem">&nbsp;</td><td style="border:1px solid #ccc;padding:0.4rem 0.6rem">&nbsp;</td></tr>
+    </tbody></table><p><br></p>`;
+    document.getElementById('rte-body')?.focus();
+    document.execCommand('insertHTML', false, html);
+  };
   function closeModal() { document.getElementById('modal').style.display = 'none'; }
   document.getElementById('modal-close').addEventListener('click', closeModal);
   document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });

@@ -69,25 +69,67 @@
     }
 
     // ── Gallery ──
-    let _images = [];
+    let _allImages    = [];  // all images for the product
+    let _activeImages = [];  // current subset (global or per-color)
 
     function setMainImage(idx) {
       const main = document.getElementById('gallery-main');
-      if (!main || !_images[idx]) return;
+      if (!main || !_activeImages[idx]) return;
       main.style.opacity = '0';
       setTimeout(() => {
-        main.src = _images[idx].url;
+        main.src = _activeImages[idx].url;
         main.style.opacity = '1';
-      }, 200);
+      }, 150);
       document.querySelectorAll('.gallery__thumb').forEach((th, i) => {
         th.classList.toggle('active', i === idx);
       });
     }
 
+    function imagesForColor(color) {
+      const specific = _allImages.filter(img => img.color === color);
+      if (specific.length > 0) return specific;
+      const global   = _allImages.filter(img => !img.color);
+      return global.length > 0 ? global : _allImages;
+    }
+
+    function colorThumb(color) {
+      const specific = _allImages.filter(img => img.color === color);
+      const front    = specific.find(i => i.type === 'front') || specific[0];
+      if (front) return front.url;
+      const fallback = _allImages.find(i => i.type === 'front' && !i.color) || _allImages.find(i => !i.color);
+      return fallback?.url || '';
+    }
+
+    function updateGallery(images) {
+      _activeImages = images;
+      const main     = document.getElementById('gallery-main');
+      const thumbsEl = document.querySelector('.gallery__thumbs');
+      if (!images.length) return;
+
+      const front = images.find(i => i.type === 'front') || images[0];
+      if (main) {
+        main.style.opacity = '0';
+        setTimeout(() => { main.src = front.url; main.style.opacity = '1'; }, 150);
+      }
+
+      if (!thumbsEl) return;
+      if (images.length > 1) {
+        thumbsEl.style.display = '';
+        thumbsEl.innerHTML = images.map((img, i) =>
+          `<img src="${img.url}" class="gallery__thumb${i === 0 ? ' active' : ''}" data-idx="${i}" alt="" loading="lazy">`
+        ).join('');
+        thumbsEl.querySelectorAll('.gallery__thumb').forEach((th, i) => {
+          th.addEventListener('click', () => setMainImage(i));
+        });
+      } else {
+        thumbsEl.style.display = 'none';
+      }
+    }
+
     // ── Load product ──
     async function load() {
       const layout = document.getElementById('product-layout');
-      const slug = location.pathname.split('/').filter(Boolean).pop();
+      const slug   = location.pathname.split('/').filter(Boolean).pop();
 
       let result;
       try {
@@ -107,20 +149,23 @@
       const p = result.product;
       document.title = `${p.name} — Arquivo 90`;
 
-      _images = p.product_images ?? [];
+      _allImages   = p.product_images ?? [];
+      _activeImages = _allImages;
       const sizes     = p.product_sizes ?? [];
       const hasColors = sizes.some(s => s.color);
-      const cover     = _images.find(i => i.type === 'front') || _images[0] || null;
 
-      const thumbsHtml = _images.map((img, i) =>
+      // Initial gallery: global images (no color), fallback to all
+      const initImages = _allImages.filter(i => !i.color);
+      _activeImages    = initImages.length > 0 ? initImages : _allImages;
+      const cover      = _activeImages.find(i => i.type === 'front') || _activeImages[0] || null;
+
+      const thumbsHtml = _activeImages.map((img, i) =>
         `<img src="${img.url}" class="gallery__thumb${i === 0 ? ' active' : ''}" data-idx="${i}" alt="" loading="lazy">`
       ).join('');
 
-      // For no-color products: all sizes; for color products: shown after color pick
       const allAvail = sizes.filter(s => s.available > 0);
       const isEsgotado = allAvail.length === 0;
 
-      // Build unique color list (preserving order)
       const colorList = hasColors
         ? [...new Map(sizes.filter(s => s.color).map(s => [s.color, s.color])).values()]
         : [];
@@ -129,7 +174,15 @@
         <div style="margin-bottom:1.5rem">
           <p class="info__section-label">Cor</p>
           <div class="color-selector" id="color-selector">
-            ${colorList.map(c => `<button class="color-btn" data-color="${c}">${c}</button>`).join('')}
+            ${colorList.map(c => {
+              const thumb = colorThumb(c);
+              return `<button class="color-btn" data-color="${c}">
+                ${thumb
+                  ? `<img src="${thumb}" class="color-btn__img" alt="${c}" loading="lazy">`
+                  : `<div class="color-btn__swatch"></div>`}
+                <span class="color-btn__label">${c}</span>
+              </button>`;
+            }).join('')}
           </div>
         </div>
         <div id="size-wrap" style="margin-bottom:2rem;display:none">
@@ -151,7 +204,7 @@
                alt="${p.name}"
                class="gallery__main"
                style="transition:opacity 0.2s">
-          ${_images.length > 1 ? `<div class="gallery__thumbs">${thumbsHtml}</div>` : ''}
+          <div class="gallery__thumbs"${_activeImages.length <= 1 ? ' style="display:none"' : ''}>${thumbsHtml}</div>
         </div>
 
         <div class="info">
@@ -166,10 +219,7 @@
             ${isEsgotado ? 'Esgotado' : 'Adicionar ao carrinho'}
           </button>
 
-          ${p.description ? `
-          <hr class="divider">
-          <p style="font-style:italic;color:var(--ink-mid);font-size:0.95rem;line-height:1.75">${p.description}</p>
-          ` : ''}
+          ${p.description ? `<hr class="divider"><div class="product-description" id="product-description"></div>` : ''}
 
           <hr class="divider">
           <div class="info__specs">
@@ -179,6 +229,11 @@
             <span>Costura dupla</span>
           </div>
         </div>`;
+
+      // Inject description as HTML (safe: admin-authored content)
+      if (p.description) {
+        document.getElementById('product-description').innerHTML = p.description;
+      }
 
       // ── Gallery thumbs ──
       document.querySelectorAll('.gallery__thumb').forEach((th, i) => {
@@ -216,13 +271,18 @@
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedColor = btn.dataset.color;
+            updateGallery(imagesForColor(selectedColor));
             renderSizes(sizesForColor(selectedColor));
             const wrap = document.getElementById('size-wrap');
             if (wrap) wrap.style.display = 'block';
           });
         });
+
+        // Auto-select if only one color
+        if (colorList.length === 1) {
+          document.querySelector('.color-btn')?.click();
+        }
       } else {
-        // No colors — attach size listeners directly
         document.querySelectorAll('.size-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
@@ -237,7 +297,10 @@
         if (hasColors && !selectedColor) { toast('Selecione uma cor', 'error'); return; }
         if (!selectedSize) { toast('Selecione um tamanho', 'error'); return; }
 
-        const coverImg = _images.find(i => i.type === 'front') || _images[0];
+        const coverForColor = selectedColor
+          ? (imagesForColor(selectedColor).find(i => i.type === 'front') || imagesForColor(selectedColor)[0])
+          : (_allImages.find(i => i.type === 'front') || _allImages[0]);
+
         addItem({
           product_id:   p.id,
           product_name: p.name,
@@ -246,7 +309,7 @@
           color:        hasColors ? selectedColor : null,
           quantity:     1,
           unit_price:   p.price,
-          image:        coverImg?.url || ''
+          image:        coverForColor?.url || ''
         });
 
         toast('Adicionado ao carrinho', 'success');

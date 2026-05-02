@@ -198,6 +198,59 @@ h3 { font-size: 1.1rem; }
   color: var(--ink-mid); line-height: 1;
 }
 
+/* ── Rich Text Editor ── */
+.rte-toolbar {
+  display: flex; gap: 0.25rem; flex-wrap: wrap;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border); border-bottom: none;
+  background: var(--surface);
+}
+.rte-toolbar button {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-family: var(--font-sc);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.4;
+}
+.rte-toolbar button:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.rte-body {
+  width: 100%; min-height: 140px;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem; line-height: 1.7;
+  outline: none; overflow-y: auto;
+}
+.rte-body:focus { border-color: var(--ink); }
+.rte-body img   { max-width: 100%; height: auto; }
+.rte-body h3    { font-size: 1rem; margin: 0.75rem 0 0.4rem; }
+.rte-body table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.rte-body table td, .rte-body table th { border: 1px solid var(--border); padding: 0.4rem 0.6rem; }
+
+/* ── Color chips (edit mode, read-only) ── */
+.color-chip {
+  display: inline-block; padding: 0.2rem 0.65rem;
+  border: 1px solid var(--border);
+  font-family: var(--font-mono); font-size: 0.65rem;
+  letter-spacing: 0.08em; color: var(--ink-mid);
+  background: var(--surface);
+}
+
+/* ── Color checkboxes (create mode) ── */
+.color-checkboxes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.color-check-label {
+  display: flex; align-items: center; gap: 0.35rem;
+  cursor: pointer; font-family: var(--font-mono);
+  font-size: 0.7rem; letter-spacing: 0.06em;
+  color: var(--ink-mid); user-select: none;
+}
+.color-check-label input[type="checkbox"] { cursor: pointer; accent-color: var(--ink); }
+
 /* ── Responsive ── */
 @media (max-width: 960px) {
   .sidebar { display: none; }

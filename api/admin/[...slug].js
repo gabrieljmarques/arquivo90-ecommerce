@@ -123,12 +123,13 @@ export default async function handler(req, res) {
 
     // POST /admin/products?id=UUID&sub=images
     if (req.method === 'POST' && id && sub === 'images') {
-      const { url, type, display_order } = req.body || {};
+      const { url, type, display_order, color } = req.body || {};
       if (!url) { res.status(400).json({ error: 'URL obrigatória' }); return; }
-      const VALID_TYPES = ['front', 'back', 'detail', 'preview_offwhite'];
+      const VALID_TYPES = ['front', 'back', 'detail', 'lifestyle', 'size_chart', 'gallery'];
       if (type && !VALID_TYPES.includes(type)) { res.status(400).json({ error: 'Tipo inválido' }); return; }
       const { data, error } = await supabase.from('product_images').insert({
-        product_id: id, url, type: type || 'front', display_order: display_order ?? 0
+        product_id: id, url, type: type || 'front', display_order: display_order ?? 0,
+        color: color || null
       }).select().single();
       if (error) { res.status(500).json({ error: error.message }); return; }
       await logAudit(supabase, { adminEmail: user.email, action: 'add_product_image', entity: 'product_image', entityId: data.id, after: data });
@@ -283,6 +284,21 @@ export default async function handler(req, res) {
       await logAudit(supabase, { adminEmail: user.email, action: 'update_setting', entity: 'site_settings', entityId: key, after: { value } });
       res.json({ ok: true }); return;
     }
+  }
+
+  // ── UPLOAD TOKEN ──────────────────────────────────────────────────────────
+  if (resource === 'upload-token') {
+    if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
+    const { filename } = req.body || {};
+    if (!filename) { res.status(400).json({ error: 'filename obrigatório' }); return; }
+    const ext = filename.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const allowed = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!allowed.includes(ext)) { res.status(400).json({ error: 'Tipo de arquivo inválido' }); return; }
+    const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { data, error } = await supabase.storage.from('product-images').createSignedUploadUrl(path);
+    if (error) { res.status(500).json({ error: error.message }); return; }
+    const publicUrl = supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+    res.json({ signedUrl: data.signedUrl, token: data.token, path, publicUrl }); return;
   }
 
   res.status(404).json({ error: 'Not found' });
