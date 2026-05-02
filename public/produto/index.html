@@ -11,19 +11,21 @@
 
   <!-- Header -->
   <header class="header scrolled" id="header">
-    <nav class="header__nav">
-      <a href="/">← Voltar</a>
-    </nav>
-    <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
-      <img src="/img/logo.png" alt="Arquivo 90"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-      <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
-    </a>
-    <div class="header__actions">
-      <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
-        <span>Carrinho</span>
-        <span class="cart-count" id="cart-count">0</span>
-      </button>
+    <div class="header__main">
+      <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
+        <img src="/img/logo.png" alt="Arquivo 90"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
+      </a>
+      <nav class="header__nav" style="flex:1;display:flex;align-items:center">
+        <a href="/" style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.1em">← Voltar</a>
+      </nav>
+      <div class="header__actions">
+        <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
+          <span>Carrinho</span>
+          <span class="cart-count" id="cart-count">0</span>
+        </button>
+      </div>
     </div>
   </header>
 
