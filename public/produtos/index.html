@@ -30,23 +30,29 @@
         </button>
       </div>
     </div>
-    <nav class="header__nav">
+    <nav class="header__nav" id="main-nav">
       <a href="/">Início</a>
       <a href="/produtos" class="active">Produtos</a>
-      <div class="nav-dropdown-wrap">
+      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
         <button class="nav-dropdown-trigger">
           Times
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
-        <div class="nav-dropdown-menu">
-          <a href="/produtos?subcategoria=Times+Nacionais">Times Nacionais</a>
-          <a href="/produtos?subcategoria=Times+Internacionais">Times Internacionais</a>
-          <a href="/produtos?subcategoria=Sele%C3%A7%C3%B5es">Seleções</a>
-          <hr>
-          <a href="/produtos?esporte=Futebol">Futebol</a>
-          <a href="/produtos?esporte=Basquete">Basquete</a>
-          <a href="/produtos?esporte=F%C3%B3rmula+1">Fórmula 1</a>
-        </div>
+        <div class="nav-dropdown-menu" id="nav-times-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Categorias
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-categorias-menu"></div>
+      </div>
+      <div class="nav-dropdown-wrap" id="nav-esportes" style="display:none">
+        <button class="nav-dropdown-trigger">
+          Esportes
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu" id="nav-esportes-menu"></div>
       </div>
       <a href="/sobre">Sobre</a>
     </nav>
@@ -484,11 +490,30 @@
       overlay.classList.remove('open');
     });
 
+    function buildNavDropdowns(products) {
+      const subcats  = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
+      const tipos    = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
+      const esportes = [...new Set(products.map(p => p.esporte).filter(Boolean))].sort();
+
+      const fill = (menuId, wrapId, items, param) => {
+        if (!items.length) return;
+        document.getElementById(menuId).innerHTML = items
+          .map(v => `<a href="/produtos?${param}=${encodeURIComponent(v)}">${v}</a>`)
+          .join('');
+        document.getElementById(wrapId).style.display = '';
+      };
+
+      fill('nav-times-menu',      'nav-times',      subcats,  'subcategoria');
+      fill('nav-categorias-menu', 'nav-categorias', tipos,    'tipo');
+      fill('nav-esportes-menu',   'nav-esportes',   esportes, 'esporte');
+    }
+
     // ── Load products ──
     (async () => {
       try {
         const { products } = await fetch('/api/products').then(r => r.json());
         allProducts = products ?? [];
+        buildNavDropdowns(allProducts);
         render();
       } catch {
         document.getElementById('product-grid').innerHTML = `
