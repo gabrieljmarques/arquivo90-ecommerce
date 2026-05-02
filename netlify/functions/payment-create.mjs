@@ -103,12 +103,12 @@ export default async (req, context) => {
     reserved.push({ p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity });
   }
 
-  // ── Calcula totais (preços do banco, nunca do frontend) ───────────────────
-  const SHIPPING_COST = 25.00;
-  const subtotal      = items.reduce(
+  // ── Calcula totais — preços no banco estão em centavos (inteiros) ────────
+  const SHIPPING_CENTAVOS = 2500; // R$ 25,00
+  const subtotal = items.reduce(
     (sum, i) => sum + (productMap[i.product_id].price * i.quantity), 0
   );
-  const total = +(subtotal + SHIPPING_COST).toFixed(2);
+  const total = subtotal + SHIPPING_CENTAVOS; // total em centavos
 
   // ── Cria pedido no banco ───────────────────────────────────────────────────
   const orderId = crypto.randomUUID();
@@ -122,7 +122,7 @@ export default async (req, context) => {
     customer_phone:   cleanCustomer.phone,
     shipping_address,
     total,
-    shipping_cost:    SHIPPING_COST
+    shipping_cost:    SHIPPING_CENTAVOS
   });
 
   if (orderErr) {
@@ -168,7 +168,7 @@ export default async (req, context) => {
           id:         i.product_id,
           title:      `${productMap[i.product_id].name} — ${i.size}`,
           quantity:   i.quantity,
-          unit_price: productMap[i.product_id].price,
+          unit_price: +(productMap[i.product_id].price / 100).toFixed(2),
           currency_id: 'BRL'
         })),
         payer:    { name: cleanCustomer.name, email: cleanCustomer.email },
