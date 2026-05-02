@@ -265,5 +265,25 @@ export default async function handler(req, res) {
     }
   }
 
+  // ── SETTINGS ──────────────────────────────────────────────────────────────
+  if (resource === 'settings') {
+
+    if (req.method === 'GET') {
+      const { data } = await supabase.from('site_settings').select('key, value');
+      const settings = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+      res.json({ settings }); return;
+    }
+
+    if (req.method === 'PUT') {
+      const { key, value } = req.body || {};
+      if (!key || value === undefined) { res.status(400).json({ error: 'key e value são obrigatórios' }); return; }
+      const { error } = await supabase.from('site_settings')
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      await logAudit(supabase, { adminEmail: user.email, action: 'update_setting', entity: 'site_settings', entityId: key, after: { value } });
+      res.json({ ok: true }); return;
+    }
+  }
+
   res.status(404).json({ error: 'Not found' });
 }

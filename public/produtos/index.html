@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos — Arquivo 90</title>
+  <meta name="description" content="Todos os produtos Arquivo 90. Camisetas premium de futebol brasileiro.">
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="announcement-bar" id="announcement-bar">Entrega para todo o Brasil &nbsp;·&nbsp; Algodão 210g &nbsp;·&nbsp; DTF 300dpi</div>
+
+  <header class="header" id="header">
+    <div class="header__main">
+      <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
+        <img src="/img/logo.png" alt="Arquivo 90"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
+      </a>
+      <div class="header__search">
+        <input type="search" class="search-input" id="search-input" placeholder="Pesquisar produtos..." autocomplete="off">
+        <button class="search-btn" aria-label="Pesquisar">⌕</button>
+      </div>
+      <div class="header__actions">
+        <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
+          <span>Carrinho</span>
+          <span class="cart-count" id="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+    <nav class="header__nav">
+      <a href="/">Início</a>
+      <a href="/produtos" class="active">Produtos</a>
+      <div class="nav-dropdown-wrap">
+        <button class="nav-dropdown-trigger">
+          Times
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <a href="/produtos?subcategoria=Times+Nacionais">Times Nacionais</a>
+          <a href="/produtos?subcategoria=Times+Internacionais">Times Internacionais</a>
+          <a href="/produtos?subcategoria=Sele%C3%A7%C3%B5es">Seleções</a>
+          <hr>
+          <a href="/produtos?esporte=Futebol">Futebol</a>
+          <a href="/produtos?esporte=Basquete">Basquete</a>
+          <a href="/produtos?esporte=F%C3%B3rmula+1">Fórmula 1</a>
+        </div>
+      </div>
+      <a href="/sobre">Sobre</a>
+    </nav>
+  </header>
+
+  <!-- Catalog header -->
+  <div class="catalog-hero">
+    <div class="container">
+      <p class="catalog-hero__label">
+        <a href="/" style="color:inherit;transition:color 0.2s" onmouseover="this.style.color='var(--ink)'" onmouseout="this.style.color=''">Início</a>
+        &nbsp;/&nbsp; Produtos
+      </p>
+      <h1 class="catalog-hero__title">Produtos</h1>
+    </div>
+  </div>
+
+  <!-- Filter overlay (mobile) -->
+  <div class="filter-overlay" id="filter-overlay"></div>
+
+  <div class="container">
+    <!-- Mobile filter bar -->
+    <div class="filters-mobile-bar">
+      <button class="filters-toggle-btn" id="filters-toggle">
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path stroke="currentColor" stroke-width="1.3" d="M1 1h12M3 5h8M5 9h4"/></svg>
+        Filtros <span id="filters-active-count" style="display:none;background:var(--ink);color:var(--bg);border-radius:50%;width:16px;height:16px;font-size:0.5rem;display:inline-flex;align-items:center;justify-content:center"></span>
+      </button>
+      <div class="sort-wrap">
+        <select class="sort-select" id="sort-select-mobile">
+          <option value="novidades">Novidades</option>
+          <option value="preco-asc">Menor preço</option>
+          <option value="preco-desc">Maior preço</option>
+          <option value="az">A — Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="catalog-layout">
+      <!-- Sidebar -->
+      <aside class="filter-sidebar" id="filter-sidebar">
+        <div class="filter-sidebar__head">
+          <span class="filter-sidebar__title">Filtros</span>
+          <button class="filter-clear-all" id="filter-clear-all">Limpar tudo</button>
+        </div>
+        <div id="active-filters" class="active-filters"></div>
+        <div id="filters-container"></div>
+      </aside>
+
+      <!-- Main grid area -->
+      <div>
+        <!-- Toolbar -->
+        <div class="products-toolbar" id="products-toolbar">
+          <span class="products-count" id="products-count">Carregando...</span>
+          <div class="sort-wrap">
+            <span class="sort-label">Ordenar</span>
+            <select class="sort-select" id="sort-select">
+              <option value="novidades">Novidades</option>
+              <option value="preco-asc">Menor preço</option>
+              <option value="preco-desc">Maior preço</option>
+              <option value="az">A — Z</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="product-grid" id="product-grid">
+          <div class="skeleton product-card__media" style="aspect-ratio:3/4"></div>
+          <div class="skeleton product-card__media" style="aspect-ratio:3/4;animation-delay:.12s"></div>
+          <div class="skeleton product-card__media" style="aspect-ratio:3/4;animation-delay:.24s"></div>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>
+        <p class="footer__brand">Arquivo 90</p>
+        <p class="footer__sub" style="margin-top:0.25rem">Memória em Tecido</p>
+      </div>
+      <p class="footer__sub">© 2026 &mdash; São Paulo</p>
+      <nav class="footer__links">
+        <a href="https://instagram.com/arquivo90" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="/admin">Admin</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { initCartButton, fmt } from '/js/cart.js';
+
+    initCartButton('#cart-toggle');
+
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', scrollY > 40);
+    }, { passive: true });
+
+    // ── Load announcement ──
+    fetch('/api/site-settings').then(r => r.json()).then(({ settings }) => {
+      if (settings?.announcement?.text) {
+        document.getElementById('announcement-bar').textContent = settings.announcement.text;
+      }
+    }).catch(() => {});
+
+    // ── State ──
+    const PER_PAGE   = 12;
+    const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
+
+    let allProducts = [];
+    let state = parseURL();
+
+    function parseURL() {
+      const p = new URLSearchParams(location.search);
+      return {
+        q:           p.get('q') || '',
+        esporte:     p.getAll('esporte'),
+        subcategoria:p.getAll('subcategoria'),
+        tipo:        p.getAll('tipo'),
+        tamanho:     p.getAll('tamanho'),
+        sort:        p.get('sort') || 'novidades',
+        page:        Math.max(1, parseInt(p.get('page') || '1', 10))
+      };
+    }
+
+    function pushURL(newState) {
+      const p = new URLSearchParams();
+      if (newState.q)            p.set('q', newState.q);
+      newState.esporte.forEach(v      => p.append('esporte', v));
+      newState.subcategoria.forEach(v => p.append('subcategoria', v));
+      newState.tipo.forEach(v         => p.append('tipo', v));
+      newState.tamanho.forEach(v      => p.append('tamanho', v));
+      if (newState.sort !== 'novidades') p.set('sort', newState.sort);
+      if (newState.page > 1)   p.set('page', newState.page);
+      const qs = p.toString();
+      history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+    }
+
+    // ── Filter products ──
+    function applyFilters(products, st) {
+      let out = products;
+      if (st.q) {
+        const q = st.q.toLowerCase();
+        out = out.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          (p.subtitle || '').toLowerCase().includes(q) ||
+          (p.time_ref || '').toLowerCase().includes(q)
+        );
+      }
+      if (st.esporte.length)      out = out.filter(p => st.esporte.includes(p.esporte));
+      if (st.subcategoria.length) out = out.filter(p => st.subcategoria.includes(p.subcategoria));
+      if (st.tipo.length)         out = out.filter(p => st.tipo.includes(p.tipo));
+      if (st.tamanho.length) {
+        out = out.filter(p =>
+          p.product_sizes.some(s => st.tamanho.includes(s.size) && s.available > 0)
+        );
+      }
+      return out;
+    }
+
+    function sortProducts(products, sort) {
+      const arr = [...products];
+      switch (sort) {
+        case 'preco-asc':  return arr.sort((a,b) => a.price - b.price);
+        case 'preco-desc': return arr.sort((a,b) => b.price - a.price);
+        case 'az':         return arr.sort((a,b) => a.name.localeCompare(b.name, 'pt-BR'));
+        default:           return arr; // display_order (API default)
+      }
+    }
+
+    // ── Build filter sidebar ──
+    function buildFilters(products, st) {
+      const container = document.getElementById('filters-container');
+
+      const counts = (field, arr) => arr.reduce((m, v) => {
+        m[v] = (m[v] || 0) + 1; return m;
+      }, {});
+
+      const groups = [
+        {
+          key: 'esporte', label: 'Esporte',
+          values: [...new Set(products.map(p => p.esporte).filter(Boolean))].sort()
+        },
+        {
+          key: 'subcategoria', label: 'Categoria',
+          values: [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort()
+        },
+        {
+          key: 'tipo', label: 'Tipo',
+          values: [...new Set(products.map(p => p.tipo).filter(Boolean))].sort()
+        }
+      ];
+
+      // Sizes: union across all products
+      const allSizes = [...new Set(
+        products.flatMap(p => p.product_sizes.filter(s => s.available > 0).map(s => s.size))
+      )].sort((a,b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b));
+
+      container.innerHTML = groups.map(g => {
+        if (!g.values.length) return '';
+        const isOpen = g.values.some(v => st[g.key].includes(v));
+        const countMap = counts(g.key, products.map(p => p[g.key]).filter(Boolean));
+        return `
+          <div class="filter-group">
+            <div class="filter-group__header ${isOpen ? 'open' : ''}" data-group="${g.key}">
+              <span class="filter-group__name">${g.label}</span>
+              <span class="filter-group__chevron">▾</span>
+            </div>
+            <div class="filter-group__body ${isOpen ? 'open' : ''}">
+              ${g.values.map(v => `
+                <label class="filter-option">
+                  <input type="checkbox" data-key="${g.key}" data-value="${v}" ${st[g.key].includes(v) ? 'checked' : ''}>
+                  ${v}
+                  <span class="filter-option-count">${countMap[v] || 0}</span>
+                </label>`).join('')}
+            </div>
+          </div>`;
+      }).join('') + (allSizes.length ? `
+        <div class="filter-group">
+          <div class="filter-group__header ${st.tamanho.length ? 'open' : ''}" data-group="tamanho">
+            <span class="filter-group__name">Tamanho</span>
+            <span class="filter-group__chevron">▾</span>
+          </div>
+          <div class="filter-group__body ${st.tamanho.length ? 'open' : ''}">
+            <div class="filter-size-grid">
+              ${allSizes.map(sz => `
+                <button type="button" class="filter-size-btn ${st.tamanho.includes(sz) ? 'active' : ''}" data-size="${sz}">${sz}</button>
+              `).join('')}
+            </div>
+          </div>
+        </div>` : '');
+
+      // Collapsible headers
+      container.querySelectorAll('.filter-group__header').forEach(h => {
+        h.addEventListener('click', () => {
+          h.classList.toggle('open');
+          h.nextElementSibling.classList.toggle('open');
+        });
+      });
+
+      // Checkbox filters
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const key = cb.dataset.key;
+          const val = cb.dataset.value;
+          let arr = [...state[key]];
+          if (cb.checked) arr.push(val); else arr = arr.filter(v => v !== val);
+          state = { ...state, [key]: arr, page: 1 };
+          pushURL(state);
+          render();
+        });
+      });
+
+      // Size buttons
+      container.querySelectorAll('.filter-size-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sz = btn.dataset.size;
+          let arr = [...state.tamanho];
+          if (arr.includes(sz)) arr = arr.filter(v => v !== sz); else arr.push(sz);
+          state = { ...state, tamanho: arr, page: 1 };
+          pushURL(state);
+          render();
+        });
+      });
+    }
+
+    // ── Active filter tags ──
+    function renderActiveTags(st) {
+      const el = document.getElementById('active-filters');
+      const tags = [];
+      const LABELS = { esporte: 'Esporte', subcategoria: 'Categoria', tipo: 'Tipo', tamanho: 'Tam.' };
+      ['esporte','subcategoria','tipo','tamanho'].forEach(key => {
+        st[key].forEach(v => tags.push({ key, v, label: `${v}` }));
+      });
+      if (st.q) tags.push({ key: 'q', v: st.q, label: `"${st.q}"` });
+      el.innerHTML = tags.map(t =>
+        `<button class="active-filter-tag" data-key="${t.key}" data-value="${t.v}">${t.label} <span class="active-filter-tag__x">×</span></button>`
+      ).join('');
+      el.querySelectorAll('.active-filter-tag').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.key, val = btn.dataset.value;
+          if (key === 'q') state = { ...state, q: '', page: 1 };
+          else state = { ...state, [key]: state[key].filter(v => v !== val), page: 1 };
+          if (document.getElementById('search-input')) document.getElementById('search-input').value = state.q;
+          pushURL(state); render();
+        });
+      });
+
+      // Update mobile badge
+      const badge = document.getElementById('filters-active-count');
+      if (badge) {
+        const count = tags.length;
+        badge.textContent = count;
+        badge.style.display = count ? 'inline-flex' : 'none';
+      }
+    }
+
+    // ── Render grid ──
+    function renderGrid(products) {
+      const grid = document.getElementById('product-grid');
+      if (!products.length) {
+        grid.innerHTML = `
+          <div class="products-empty">
+            <p class="products-empty__title">Nenhum produto encontrado</p>
+            <p class="products-empty__sub">Tente remover alguns filtros</p>
+          </div>`;
+        return;
+      }
+      grid.innerHTML = products.map(p => {
+        const imgs  = p.product_images ?? [];
+        const front = imgs.find(i => i.type === 'front') || imgs[0];
+        const back  = imgs.find(i => i.type === 'back')  || imgs[1];
+        const sizes = p.product_sizes ?? [];
+        const hasStock = sizes.some(s => s.available > 0);
+        return `
+          <a href="/produto/${p.slug}" class="product-card">
+            <div class="product-card__media">
+              ${front ? `<img src="${front.url}" alt="${p.name}" class="product-card__img" loading="lazy">` : ''}
+              ${back  ? `<img src="${back.url}"  alt=""      class="product-card__img--back" loading="lazy">` : ''}
+              <div class="product-card__overlay" aria-hidden="true">
+                <span class="product-card__overlay-cta">Ver produto</span>
+              </div>
+              ${!hasStock ? `<span class="product-card__sold-badge">Esgotado</span>` : ''}
+            </div>
+            <div class="product-card__info">
+              <p class="product-card__name">${p.name}</p>
+              ${p.subtitle ? `<p class="product-card__sub">${p.subtitle}</p>` : ''}
+              <p class="product-card__price">${fmt(p.price)}</p>
+              <div class="product-card__sizes">
+                ${sizes.map(s => `<span class="size-dot${s.available === 0 ? ' out' : ''}">${s.size}</span>`).join('')}
+              </div>
+            </div>
+          </a>`;
+      }).join('');
+    }
+
+    // ── Render pagination ──
+    function renderPagination(total, page, perPage) {
+      const pages = Math.ceil(total / perPage);
+      const el = document.getElementById('pagination');
+      if (pages <= 1) { el.innerHTML = ''; return; }
+
+      const btns = [];
+      btns.push(`<button class="page-btn" ${page===1?'disabled':''} onclick="goPage(${page-1})">‹</button>`);
+
+      for (let i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || Math.abs(i - page) <= 2) {
+          btns.push(`<button class="page-btn ${i===page?'active':''}" onclick="goPage(${i})">${i}</button>`);
+        } else if (Math.abs(i - page) === 3) {
+          btns.push(`<span class="page-ellipsis">…</span>`);
+        }
+      }
+
+      btns.push(`<button class="page-btn" ${page===pages?'disabled':''} onclick="goPage(${page+1})">›</button>`);
+      el.innerHTML = btns.join('');
+    }
+
+    window.goPage = (page) => {
+      state = { ...state, page };
+      pushURL(state);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      render();
+    };
+
+    // ── Main render ──
+    function render() {
+      const filtered = applyFilters(allProducts, state);
+      const sorted   = sortProducts(filtered, state.sort);
+      const start    = (state.page - 1) * PER_PAGE;
+      const page     = sorted.slice(start, start + PER_PAGE);
+
+      const total = filtered.length;
+      document.getElementById('products-count').textContent =
+        `${total} produto${total !== 1 ? 's' : ''}`;
+
+      buildFilters(allProducts, state);
+      renderActiveTags(state);
+      renderGrid(page);
+      renderPagination(total, state.page, PER_PAGE);
+
+      // Sync sort selects
+      ['sort-select','sort-select-mobile'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = state.sort;
+      });
+
+      // Sync search
+      const si = document.getElementById('search-input');
+      if (si && si.value !== state.q) si.value = state.q;
+    }
+
+    // ── Sort handlers ──
+    ['sort-select','sort-select-mobile'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', e => {
+        state = { ...state, sort: e.target.value, page: 1 };
+        pushURL(state);
+        render();
+      });
+    });
+
+    // ── Search ──
+    document.getElementById('search-input')?.addEventListener('input', e => {
+      state = { ...state, q: e.target.value.trim(), page: 1 };
+      pushURL(state);
+      render();
+    });
+
+    // ── Clear all ──
+    document.getElementById('filter-clear-all')?.addEventListener('click', () => {
+      state = { ...state, esporte: [], subcategoria: [], tipo: [], tamanho: [], q: '', page: 1 };
+      if (document.getElementById('search-input')) document.getElementById('search-input').value = '';
+      pushURL(state);
+      render();
+    });
+
+    // ── Mobile sidebar ──
+    const sidebar  = document.getElementById('filter-sidebar');
+    const overlay  = document.getElementById('filter-overlay');
+
+    document.getElementById('filters-toggle')?.addEventListener('click', () => {
+      sidebar.classList.add('open');
+      overlay.classList.add('open');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
+
+    // ── Load products ──
+    (async () => {
+      try {
+        const { products } = await fetch('/api/products').then(r => r.json());
+        allProducts = products ?? [];
+        render();
+      } catch {
+        document.getElementById('product-grid').innerHTML = `
+          <div class="products-empty">
+            <p class="products-empty__title">Erro ao carregar produtos</p>
+            <p class="products-empty__sub">Tente novamente mais tarde</p>
+          </div>`;
+        document.getElementById('products-count').textContent = '0 produtos';
+      }
+    })();
+  </script>
+</body>
+</html>

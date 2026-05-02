@@ -49,6 +49,7 @@
       <a href="#pedidos"   data-page="pedidos">Pedidos</a>
       <a href="#produtos"  data-page="produtos">Produtos</a>
       <a href="#estoque"   data-page="estoque">Estoque</a>
+      <a href="#conteudo"  data-page="conteudo">Conteúdo</a>
     </nav>
     <div class="sidebar__footer">
       <button class="btn btn--ghost btn--full" id="btn-logout" style="font-size:0.72rem;padding:0.6rem">Sair</button>
@@ -130,6 +131,77 @@
           </tr></thead>
           <tbody id="stock-tbody"><tr><td colspan="8" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Conteúdo -->
+    <div class="page" id="page-conteudo">
+      <h2 style="margin-bottom:2.5rem">Conteúdo da loja</h2>
+
+      <!-- Anúncio -->
+      <div style="border:1px solid var(--border);padding:2rem;margin-bottom:1.5rem">
+        <h3 style="font-size:0.9rem;letter-spacing:0.05em;margin-bottom:1.25rem">Barra de anúncio</h3>
+        <div class="field" style="margin-bottom:1rem">
+          <label class="label">Texto</label>
+          <input class="input" id="cfg-announcement" placeholder="Entrega para todo o Brasil · Algodão 210g">
+        </div>
+        <button class="btn btn--primary" style="font-size:0.72rem;padding:0.6rem 1.4rem" onclick="saveSetting('announcement', {text: document.getElementById('cfg-announcement').value})">Salvar</button>
+      </div>
+
+      <!-- Hero -->
+      <div style="border:1px solid var(--border);padding:2rem;margin-bottom:1.5rem">
+        <h3 style="font-size:0.9rem;letter-spacing:0.05em;margin-bottom:1.25rem">Hero (página inicial)</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div class="field">
+            <label class="label">Tagline</label>
+            <input class="input" id="cfg-hero-tagline" placeholder="Memória em Tecido">
+          </div>
+          <div class="field">
+            <label class="label">Texto do botão CTA</label>
+            <input class="input" id="cfg-hero-cta-text" placeholder="Ver Produtos">
+          </div>
+          <div class="field">
+            <label class="label">Link do botão CTA</label>
+            <input class="input" id="cfg-hero-cta-link" placeholder="/produtos">
+          </div>
+        </div>
+        <button class="btn btn--primary" style="font-size:0.72rem;padding:0.6rem 1.4rem" onclick="saveHero()">Salvar</button>
+      </div>
+
+      <!-- Marquee -->
+      <div style="border:1px solid var(--border);padding:2rem;margin-bottom:1.5rem">
+        <h3 style="font-size:0.9rem;letter-spacing:0.05em;margin-bottom:0.4rem">Faixa rolante (marquee)</h3>
+        <p style="font-family:var(--font-mono);font-size:0.62rem;color:var(--ink-faint);letter-spacing:0.08em;margin-bottom:1.25rem">Um item por linha. Use · como separador.</p>
+        <div class="field" style="margin-bottom:1rem">
+          <label class="label">Itens (um por linha)</label>
+          <textarea class="textarea" id="cfg-marquee" style="min-height:130px;font-family:var(--font-mono);font-size:0.8rem"></textarea>
+        </div>
+        <button class="btn btn--primary" style="font-size:0.72rem;padding:0.6rem 1.4rem" onclick="saveMarquee()">Salvar</button>
+      </div>
+
+      <!-- Sobre -->
+      <div style="border:1px solid var(--border);padding:2rem;margin-bottom:1.5rem">
+        <h3 style="font-size:0.9rem;letter-spacing:0.05em;margin-bottom:1.25rem">Página Sobre</h3>
+        <div class="field" style="margin-bottom:1rem">
+          <label class="label">Citação principal</label>
+          <textarea class="textarea" id="cfg-sobre-quote" style="min-height:100px"></textarea>
+        </div>
+        <p style="font-family:var(--font-mono);font-size:0.62rem;color:var(--ink-mid);letter-spacing:0.08em;margin-bottom:1rem">Pilares (3 colunas)</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <div class="field" style="margin-bottom:0.5rem"><label class="label">Título 1</label><input class="input" id="cfg-p1-label" placeholder="Qualidade"></div>
+            <div class="field"><label class="label">Conteúdo</label><textarea class="textarea" id="cfg-p1-content" style="min-height:70px"></textarea></div>
+          </div>
+          <div>
+            <div class="field" style="margin-bottom:0.5rem"><label class="label">Título 2</label><input class="input" id="cfg-p2-label" placeholder="Impressão"></div>
+            <div class="field"><label class="label">Conteúdo</label><textarea class="textarea" id="cfg-p2-content" style="min-height:70px"></textarea></div>
+          </div>
+          <div>
+            <div class="field" style="margin-bottom:0.5rem"><label class="label">Título 3</label><input class="input" id="cfg-p3-label" placeholder="Entrega"></div>
+            <div class="field"><label class="label">Conteúdo</label><textarea class="textarea" id="cfg-p3-content" style="min-height:70px"></textarea></div>
+          </div>
+        </div>
+        <button class="btn btn--primary" style="font-size:0.72rem;padding:0.6rem 1.4rem" onclick="saveSobre()">Salvar</button>
       </div>
     </div>
   </main>
@@ -221,6 +293,7 @@
     loadOrders();
     loadProducts();
     loadStock();
+    loadSettings();
   }
 
   // ── NAVIGATION ────────────────────────────────────────────────────────────
@@ -708,6 +781,78 @@
       loadStock();
     } catch(e) { alert(e.message); }
   };
+
+  // ── CONTEÚDO ──────────────────────────────────────────────────────────────
+  async function loadSettings() {
+    try {
+      const { settings } = await api('/admin/settings');
+
+      if (settings.announcement?.text !== undefined)
+        document.getElementById('cfg-announcement').value = settings.announcement.text;
+
+      if (settings.hero) {
+        document.getElementById('cfg-hero-tagline').value  = settings.hero.tagline  || '';
+        document.getElementById('cfg-hero-cta-text').value = settings.hero.cta_text || '';
+        document.getElementById('cfg-hero-cta-link').value = settings.hero.cta_link || '';
+      }
+
+      if (settings.marquee?.items)
+        document.getElementById('cfg-marquee').value = settings.marquee.items.join('\n');
+
+      if (settings.sobre) {
+        document.getElementById('cfg-sobre-quote').value = settings.sobre.quote || '';
+        const p = settings.sobre.pillars || [];
+        document.getElementById('cfg-p1-label').value   = p[0]?.label   || '';
+        document.getElementById('cfg-p1-content').value = p[0]?.content || '';
+        document.getElementById('cfg-p2-label').value   = p[1]?.label   || '';
+        document.getElementById('cfg-p2-content').value = p[1]?.content || '';
+        document.getElementById('cfg-p3-label').value   = p[2]?.label   || '';
+        document.getElementById('cfg-p3-content').value = p[2]?.content || '';
+      }
+    } catch(e) { console.error('loadSettings', e); }
+  }
+
+  window.saveSetting = async (key, value) => {
+    try {
+      await api('/admin/settings', { method: 'PUT', body: JSON.stringify({ key, value }) });
+      showToast('Salvo');
+    } catch(e) { alert(e.message); }
+  };
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+      position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--ink)', color: 'var(--bg)',
+      fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.1em',
+      padding: '0.75rem 2rem', zIndex: 9999, opacity: 0, transition: 'opacity 0.2s'
+    });
+    document.body.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = 1; });
+    setTimeout(() => { t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, 2200);
+  }
+
+  window.saveHero = () => saveSetting('hero', {
+    tagline:  document.getElementById('cfg-hero-tagline').value.trim(),
+    cta_text: document.getElementById('cfg-hero-cta-text').value.trim(),
+    cta_link: document.getElementById('cfg-hero-cta-link').value.trim()
+  });
+
+  window.saveMarquee = () => {
+    const items = document.getElementById('cfg-marquee').value
+      .split('\n').map(l => l.trim()).filter(Boolean);
+    saveSetting('marquee', { items });
+  };
+
+  window.saveSobre = () => saveSetting('sobre', {
+    quote: document.getElementById('cfg-sobre-quote').value.trim(),
+    pillars: [
+      { label: document.getElementById('cfg-p1-label').value.trim(), content: document.getElementById('cfg-p1-content').value.trim() },
+      { label: document.getElementById('cfg-p2-label').value.trim(), content: document.getElementById('cfg-p2-content').value.trim() },
+      { label: document.getElementById('cfg-p3-label').value.trim(), content: document.getElementById('cfg-p3-content').value.trim() }
+    ]
+  });
 
   // ── MODAL ─────────────────────────────────────────────────────────────────
   function showModal(title, body, id = null) {

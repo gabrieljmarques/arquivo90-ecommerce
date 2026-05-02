@@ -14,7 +14,7 @@
 <body>
 
   <!-- Announcement bar -->
-  <div class="announcement-bar">Entrega para todo o Brasil &nbsp;·&nbsp; Algodão 210g &nbsp;·&nbsp; DTF 300dpi</div>
+  <div class="announcement-bar" id="announcement-bar">Entrega para todo o Brasil &nbsp;·&nbsp; Algodão 210g &nbsp;·&nbsp; DTF 300dpi</div>
 
   <!-- Header -->
   <header class="header" id="header">
@@ -37,13 +37,28 @@
     </div>
     <nav class="header__nav">
       <a href="/" class="active">Início</a>
-      <a href="#produtos">Produtos</a>
-      <a href="#sobre">Sobre</a>
+      <a href="/produtos">Produtos</a>
+      <div class="nav-dropdown-wrap">
+        <button class="nav-dropdown-trigger">
+          Times
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <a href="/produtos?subcategoria=Times+Nacionais">Times Nacionais</a>
+          <a href="/produtos?subcategoria=Times+Internacionais">Times Internacionais</a>
+          <a href="/produtos?subcategoria=Sele%C3%A7%C3%B5es">Seleções</a>
+          <hr>
+          <a href="/produtos?esporte=Futebol">Futebol</a>
+          <a href="/produtos?esporte=Basquete">Basquete</a>
+          <a href="/produtos?esporte=F%C3%B3rmula+1">Fórmula 1</a>
+        </div>
+      </div>
+      <a href="/sobre">Sobre</a>
     </nav>
   </header>
 
   <!-- Hero -->
-  <section class="hero" aria-label="Destaque">
+  <section class="hero" id="hero" aria-label="Destaque">
     <span class="hero__watermark" aria-hidden="true">90</span>
 
     <img src="/img/logo.png" alt="Arquivo 90 — Memória em Tecido"
@@ -51,17 +66,17 @@
          onerror="this.style.display='none';document.getElementById('hero-text').style.display='block'">
     <h1 id="hero-text" class="hero__logo-text fade-up" style="display:none">ARQUIVO 90</h1>
 
-    <p class="hero__tagline fade-up fade-up--d1">Memória em Tecido</p>
+    <p class="hero__tagline fade-up fade-up--d1" id="hero-tagline">Memória em Tecido</p>
     <div class="hero__rule fade-up fade-up--d2" aria-hidden="true"></div>
     <div class="fade-up fade-up--d3" style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;position:relative;z-index:1">
-      <a href="#produtos" class="btn">Ver Produtos</a>
+      <a href="/produtos" class="btn" id="hero-cta">Ver Produtos</a>
     </div>
-    <p class="hero__scroll fade-up fade-up--d4" aria-hidden="true">↓ &nbsp; scroll</p>
+    <button class="hero__scroll fade-up fade-up--d4" id="hero-scroll" aria-label="Rolar para produtos">↓ &nbsp; scroll</button>
   </section>
 
   <!-- Ticker -->
-  <div class="strip" aria-hidden="true">
-    <div class="strip__inner">
+  <div class="strip" id="marquee-strip" aria-hidden="true">
+    <div class="strip__inner" id="marquee-inner">
       <span class="strip__item">Arquivo 90</span>
       <span class="strip__item">·</span>
       <span class="strip__item">Memória em Tecido</span>
@@ -76,7 +91,6 @@
       <span class="strip__item">·</span>
       <span class="strip__item">Envio para todo o Brasil</span>
       <span class="strip__item">·</span>
-      <!-- duplicate for seamless loop -->
       <span class="strip__item">Arquivo 90</span>
       <span class="strip__item">·</span>
       <span class="strip__item">Memória em Tecido</span>
@@ -94,29 +108,32 @@
     </div>
   </div>
 
-  <!-- Produtos -->
+  <!-- Produtos em destaque -->
   <section class="section" id="produtos">
     <div class="container">
-      <p class="section__label">Produtos</p>
+      <p class="section__label">Destaques</p>
       <div class="product-grid" id="product-grid">
         <div class="skeleton product-card__media" style="aspect-ratio:3/4"></div>
         <div class="skeleton product-card__media" style="aspect-ratio:3/4;animation-delay:.15s"></div>
         <div class="skeleton product-card__media" style="aspect-ratio:3/4;animation-delay:.3s"></div>
       </div>
+      <div style="text-align:center;margin-top:3rem">
+        <a href="/produtos" class="btn btn--ghost">Ver todos os produtos</a>
+      </div>
     </div>
   </section>
 
-  <!-- Sobre -->
+  <!-- Sobre (preview) -->
   <section class="section" id="sobre" style="border-top:1px solid var(--border)">
     <div class="container--narrow">
       <p class="section__label">Sobre</p>
-      <blockquote style="font-family:var(--font-body);font-size:clamp(1.15rem,2.2vw,1.55rem);font-weight:300;font-style:italic;line-height:1.65;color:var(--ink)">
+      <blockquote id="sobre-quote" style="font-family:var(--font-body);font-size:clamp(1.15rem,2.2vw,1.55rem);font-weight:300;font-style:italic;line-height:1.65;color:var(--ink)">
         "Alguns momentos do futebol não cabem em replay. Ficaram guardados na memória de quem estava lá — ou na de quem sonhou em estar. Arquivo 90 transforma esses instantes em peça de vestuário."
       </blockquote>
 
       <hr class="divider" style="margin-top:3rem">
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:2rem">
+      <div id="sobre-pillars" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:2rem">
         <div>
           <p style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:0.6rem">Qualidade</p>
           <p style="font-family:var(--font-sc);font-size:0.95rem;line-height:1.7">Algodão 210g<br>Fio 30.1 penteado</p>
@@ -129,6 +146,10 @@
           <p style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:0.6rem">Entrega</p>
           <p style="font-family:var(--font-sc);font-size:0.95rem;line-height:1.7">Todo o Brasil<br>São Paulo, BR</p>
         </div>
+      </div>
+
+      <div style="text-align:center;margin-top:3rem">
+        <a href="/sobre" class="btn btn--ghost">Saiba mais</a>
       </div>
     </div>
   </section>
@@ -153,11 +174,8 @@
   <script type="module">
     import { initCartButton, fmt } from '/js/cart.js';
 
-    // Redireciona magic link / recovery token para o admin
     const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
-    if (hash.access_token) {
-      location.replace('/admin' + location.hash);
-    }
+    if (hash.access_token) location.replace('/admin' + location.hash);
 
     initCartButton('#cart-toggle');
 
@@ -166,24 +184,71 @@
       header.classList.toggle('scrolled', scrollY > 40);
     }, { passive: true });
 
+    // ── Scroll button ──
+    document.getElementById('hero-scroll')?.addEventListener('click', () => {
+      document.getElementById('produtos')?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // ── Load site settings ──
+    (async () => {
+      try {
+        const { settings } = await fetch('/api/site-settings').then(r => r.json());
+
+        if (settings.announcement?.text) {
+          document.getElementById('announcement-bar').textContent = settings.announcement.text;
+        }
+
+        if (settings.hero) {
+          const cta = document.getElementById('hero-cta');
+          if (cta && settings.hero.cta_text) cta.textContent = settings.hero.cta_text;
+          if (cta && settings.hero.cta_link) cta.href = settings.hero.cta_link;
+          const tagline = document.getElementById('hero-tagline');
+          if (tagline && settings.hero.tagline) tagline.textContent = settings.hero.tagline;
+        }
+
+        if (settings.marquee?.items?.length) {
+          const inner = document.getElementById('marquee-inner');
+          if (inner) {
+            const doubled = [...settings.marquee.items, ...settings.marquee.items];
+            inner.innerHTML = doubled.map(t => `<span class="strip__item">${t}</span>`).join('');
+          }
+        }
+
+        if (settings.sobre) {
+          if (settings.sobre.quote) {
+            document.getElementById('sobre-quote').textContent = '“' + settings.sobre.quote + '”';
+          }
+          if (Array.isArray(settings.sobre.pillars)) {
+            const el = document.getElementById('sobre-pillars');
+            if (el) {
+              el.innerHTML = settings.sobre.pillars.map(p => `
+                <div>
+                  <p style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:0.6rem">${p.label}</p>
+                  <p style="font-family:var(--font-sc);font-size:0.95rem;line-height:1.7">${(p.content||'').replace(/\n/g,'<br>')}</p>
+                </div>`).join('');
+            }
+          }
+        }
+      } catch { /* use defaults */ }
+    })();
+
+    // ── Load featured products ──
     let _allProducts = [];
 
     function renderGrid(products) {
       const grid = document.getElementById('product-grid');
       if (!products?.length) {
-        grid.innerHTML = `
-          <div style="grid-column:1/-1;padding:5rem 0;text-align:center">
-            <p style="font-family:var(--font-sc);letter-spacing:0.1em;color:var(--ink-mid);font-size:1rem">Nenhum produto encontrado.</p>
-          </div>`;
+        grid.innerHTML = `<div style="grid-column:1/-1;padding:5rem 0;text-align:center">
+          <p style="font-family:var(--font-sc);letter-spacing:0.1em;color:var(--ink-mid)">Nenhum produto encontrado.</p>
+        </div>`;
         return;
       }
       grid.innerHTML = products.map(p => {
-        const imgs     = p.product_images ?? [];
-        const front    = imgs.find(i => i.type === 'front') || imgs[0];
-        const back     = imgs.find(i => i.type === 'back')  || imgs[1];
-        const sizes    = p.product_sizes ?? [];
+        const imgs  = p.product_images ?? [];
+        const front = imgs.find(i => i.type === 'front') || imgs[0];
+        const back  = imgs.find(i => i.type === 'back')  || imgs[1];
+        const sizes = p.product_sizes ?? [];
         const hasStock = sizes.some(s => s.available > 0);
-
         return `
           <a href="/produto/${p.slug}" class="product-card">
             <div class="product-card__media">
@@ -208,24 +273,20 @@
 
     async function loadProducts() {
       try {
-        const res = await fetch('/api/products');
-        if (!res.ok) throw new Error(`${res.status}`);
-        const { products } = await res.json();
+        const { products } = await fetch('/api/products').then(r => r.json());
         _allProducts = products ?? [];
-        renderGrid(_allProducts);
-      } catch {
-        renderGrid([]);
-      }
+        // Show featured first, fallback to first 6
+        const featured = _allProducts.filter(p => p.featured);
+        renderGrid(featured.length ? featured : _allProducts.slice(0, 6));
+      } catch { renderGrid([]); }
     }
 
-    // ── Search ──
-    document.getElementById('search-input')?.addEventListener('input', e => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!q) { renderGrid(_allProducts); return; }
-      renderGrid(_allProducts.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.subtitle || '').toLowerCase().includes(q)
-      ));
+    // ── Search redirects to products page ──
+    document.getElementById('search-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const q = e.target.value.trim();
+        if (q) location.href = `/produtos?q=${encodeURIComponent(q)}`;
+      }
     });
 
     loadProducts();

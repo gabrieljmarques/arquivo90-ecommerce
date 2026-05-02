@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sobre — Arquivo 90</title>
+  <meta name="description" content="Arquivo 90 — Memória em Tecido. A história por trás das camisetas.">
+  <link rel="icon" href="/img/favicon.ico">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="announcement-bar" id="announcement-bar">Entrega para todo o Brasil &nbsp;·&nbsp; Algodão 210g &nbsp;·&nbsp; DTF 300dpi</div>
+
+  <header class="header" id="header">
+    <div class="header__main">
+      <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
+        <img src="/img/logo.png" alt="Arquivo 90"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
+      </a>
+      <div class="header__search">
+        <input type="search" class="search-input" id="search-input" placeholder="Pesquisar produtos..." autocomplete="off">
+        <button class="search-btn" aria-label="Pesquisar">⌕</button>
+      </div>
+      <div class="header__actions">
+        <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
+          <span>Carrinho</span>
+          <span class="cart-count" id="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+    <nav class="header__nav">
+      <a href="/">Início</a>
+      <a href="/produtos">Produtos</a>
+      <div class="nav-dropdown-wrap">
+        <button class="nav-dropdown-trigger">
+          Times
+          <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <a href="/produtos?subcategoria=Times+Nacionais">Times Nacionais</a>
+          <a href="/produtos?subcategoria=Times+Internacionais">Times Internacionais</a>
+          <a href="/produtos?subcategoria=Sele%C3%A7%C3%B5es">Seleções</a>
+          <hr>
+          <a href="/produtos?esporte=Futebol">Futebol</a>
+          <a href="/produtos?esporte=Basquete">Basquete</a>
+          <a href="/produtos?esporte=F%C3%B3rmula+1">Fórmula 1</a>
+        </div>
+      </div>
+      <a href="/sobre" class="active">Sobre</a>
+    </nav>
+  </header>
+
+  <!-- Sobre hero -->
+  <div class="sobre-hero">
+    <div class="container--narrow" style="text-align:center">
+      <p style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:0.8rem">
+        <a href="/" style="color:inherit">Início</a> &nbsp;/&nbsp; Sobre
+      </p>
+      <h1 style="font-family:var(--font-sc);font-size:clamp(2rem,5vw,3.5rem);letter-spacing:0.04em;font-weight:700">Arquivo 90</h1>
+      <p style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mid);margin-top:0.6rem" id="sobre-sub">Memória em Tecido</p>
+    </div>
+  </div>
+
+  <!-- Quote section -->
+  <section style="padding:0 0 5rem">
+    <div class="container--narrow">
+      <blockquote class="sobre-quote" id="sobre-quote">
+        Alguns momentos do futebol não cabem em replay. Ficaram guardados na memória de quem estava lá — ou na de quem sonhou em estar. Arquivo 90 transforma esses instantes em peça de vestuário.
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- Pillars -->
+  <section style="border-top:1px solid var(--border);padding:5rem 0">
+    <div class="container">
+      <p class="section__label">O produto</p>
+      <div class="sobre-pillars" id="sobre-pillars">
+        <div>
+          <p class="sobre-pillar__label">Qualidade</p>
+          <p class="sobre-pillar__content">Algodão 210g
+Fio 30.1 penteado</p>
+        </div>
+        <div>
+          <p class="sobre-pillar__label">Impressão</p>
+          <p class="sobre-pillar__content">DTF 300dpi
+Costura dupla</p>
+        </div>
+        <div>
+          <p class="sobre-pillar__label">Entrega</p>
+          <p class="sobre-pillar__content">Todo o Brasil
+São Paulo, BR</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="border-top:1px solid var(--border);padding:6rem 0;text-align:center">
+    <div class="container--narrow">
+      <p style="font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:2rem">Coleção</p>
+      <h2 style="font-family:var(--font-sc);font-size:clamp(1.5rem,3vw,2.2rem);margin-bottom:2.5rem">Ver todos os produtos</h2>
+      <a href="/produtos" class="btn btn--primary">Ver produtos</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>
+        <p class="footer__brand">Arquivo 90</p>
+        <p class="footer__sub" style="margin-top:0.25rem">Memória em Tecido</p>
+      </div>
+      <p class="footer__sub">© 2026 &mdash; São Paulo</p>
+      <nav class="footer__links">
+        <a href="https://instagram.com/arquivo90" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="/admin">Admin</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { initCartButton } from '/js/cart.js';
+
+    initCartButton('#cart-toggle');
+
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', scrollY > 40);
+    }, { passive: true });
+
+    // Search redirects
+    document.getElementById('search-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const q = e.target.value.trim();
+        if (q) location.href = `/produtos?q=${encodeURIComponent(q)}`;
+      }
+    });
+
+    // Load dynamic settings
+    (async () => {
+      try {
+        const { settings } = await fetch('/api/site-settings').then(r => r.json());
+
+        if (settings?.announcement?.text) {
+          document.getElementById('announcement-bar').textContent = settings.announcement.text;
+        }
+
+        if (settings?.sobre) {
+          if (settings.sobre.quote) {
+            document.getElementById('sobre-quote').textContent = settings.sobre.quote;
+          }
+          if (Array.isArray(settings.sobre.pillars)) {
+            document.getElementById('sobre-pillars').innerHTML = settings.sobre.pillars.map(p => `
+              <div>
+                <p class="sobre-pillar__label">${p.label}</p>
+                <p class="sobre-pillar__content">${(p.content || '').replace(/\n/g, '\n')}</p>
+              </div>`).join('');
+          }
+        }
+      } catch { /* use defaults */ }
+    })();
+  </script>
+</body>
+</html>
