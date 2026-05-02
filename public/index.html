@@ -153,6 +153,12 @@
   <script type="module">
     import { initCartButton, fmt } from '/js/cart.js';
 
+    // Redireciona magic link / recovery token para o admin
+    const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+    if (hash.access_token) {
+      location.replace('/admin' + location.hash);
+    }
+
     initCartButton('#cart-toggle');
 
     const header = document.getElementById('header');
