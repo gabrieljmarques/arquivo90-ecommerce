@@ -101,12 +101,13 @@
     }
 
     function updateGallery(images) {
-      _activeImages = images;
+      _activeImages = [...images].sort((a, b) => (a.display_order ?? 99) - (b.display_order ?? 99));
       const main     = document.getElementById('gallery-main');
       const thumbsEl = document.querySelector('.gallery__thumbs');
       if (!images.length) return;
 
-      const front = images.find(i => i.type === 'front') || images[0];
+      const sorted = [...images].sort((a, b) => (a.display_order ?? 99) - (b.display_order ?? 99));
+      const front = sorted[0];
       if (main) {
         main.style.opacity = '0';
         setTimeout(() => { main.src = front.url; main.style.opacity = '1'; }, 150);
@@ -157,7 +158,8 @@
       // Initial gallery: global images (no color), fallback to all
       const initImages = _allImages.filter(i => !i.color);
       _activeImages    = initImages.length > 0 ? initImages : _allImages;
-      const cover      = _activeImages.find(i => i.type === 'front') || _activeImages[0] || null;
+      _activeImages    = [..._activeImages].sort((a, b) => (a.display_order ?? 99) - (b.display_order ?? 99));
+      const cover      = _activeImages[0] || null;
 
       const thumbsHtml = _activeImages.map((img, i) =>
         `<img src="${img.url}" class="gallery__thumb${i === 0 ? ' active' : ''}" data-idx="${i}" alt="" loading="lazy">`

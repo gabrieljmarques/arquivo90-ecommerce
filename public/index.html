@@ -242,9 +242,9 @@
         return;
       }
       grid.innerHTML = products.map(p => {
-        const imgs  = p.product_images ?? [];
-        const front = imgs.find(i => i.type === 'front') || imgs[0];
-        const back  = imgs.find(i => i.type === 'back')  || imgs[1];
+        const imgs  = [...(p.product_images ?? [])].sort((a, b) => (a.display_order ?? 99) - (b.display_order ?? 99));
+        const front = imgs[0];
+        const back  = imgs.find(i => i.type === 'back') || imgs[1];
         const sizes = p.product_sizes ?? [];
         const hasStock = sizes.some(s => s.available > 0);
         return `
