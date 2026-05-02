@@ -14,6 +14,9 @@
 
   <header class="header" id="header">
     <div class="header__main">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
       <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
         <img src="/img/logo.png" alt="Arquivo 90"
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
@@ -141,7 +144,7 @@
       </div>
       <p class="footer__sub">© 2026 &mdash; São Paulo</p>
       <nav class="footer__links">
-        <a href="https://instagram.com/arquivo90" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="https://instagram.com/arquivo90.oficial" target="_blank" rel="noopener noreferrer">Instagram</a>
         <a href="/admin">Admin</a>
       </nav>
     </div>
@@ -151,8 +154,10 @@
 
   <script type="module">
     import { initCartButton, fmt } from '/js/cart.js';
+    import { initNav, buildNavDrawer } from '/js/nav.js';
 
     initCartButton('#cart-toggle');
+    initNav('/produtos');
 
     const header = document.getElementById('header');
     window.addEventListener('scroll', () => {
@@ -525,6 +530,7 @@
         const { products } = await fetch('/api/products').then(r => r.json());
         allProducts = products ?? [];
         buildNavDropdowns(allProducts);
+        buildNavDrawer(allProducts, '/produtos');
         render();
       } catch {
         document.getElementById('product-grid').innerHTML = `

@@ -14,6 +14,9 @@
 
   <header class="header" id="header">
     <div class="header__main">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
       <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
         <img src="/img/logo.png" alt="Arquivo 90"
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
@@ -125,7 +128,7 @@ São Paulo, BR</p>
       </div>
       <p class="footer__sub">© 2026 &mdash; São Paulo</p>
       <nav class="footer__links">
-        <a href="https://instagram.com/arquivo90" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="https://instagram.com/arquivo90.oficial" target="_blank" rel="noopener noreferrer">Instagram</a>
         <a href="/admin">Admin</a>
       </nav>
     </div>
@@ -135,8 +138,10 @@ São Paulo, BR</p>
 
   <script type="module">
     import { initCartButton } from '/js/cart.js';
+    import { initNav, buildNavDrawer } from '/js/nav.js';
 
     initCartButton('#cart-toggle');
+    initNav('/sobre');
 
     function buildNavDropdowns(products) {
       const tipos    = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
@@ -155,7 +160,10 @@ São Paulo, BR</p>
       fill('nav-times-menu',      'nav-times',      times,    'time_ref');
     }
 
-    fetch('/api/products').then(r => r.json()).then(({ products }) => buildNavDropdowns(products ?? [])).catch(() => {});
+    fetch('/api/products').then(r => r.json()).then(({ products }) => {
+      buildNavDropdowns(products ?? []);
+      buildNavDrawer(products ?? [], '/sobre');
+    }).catch(() => {});
 
     const header = document.getElementById('header');
     window.addEventListener('scroll', () => {

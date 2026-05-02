@@ -19,6 +19,9 @@
   <!-- Header -->
   <header class="header" id="header">
     <div class="header__main">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
       <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
         <img src="/img/logo.png" alt="Arquivo 90"
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
@@ -174,7 +177,7 @@
       </div>
       <p class="footer__sub">© 2026 &mdash; São Paulo</p>
       <nav class="footer__links">
-        <a href="https://instagram.com/arquivo90" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="https://instagram.com/arquivo90.oficial" target="_blank" rel="noopener noreferrer">Instagram</a>
         <a href="/admin">Admin</a>
       </nav>
     </div>
@@ -184,11 +187,13 @@
 
   <script type="module">
     import { initCartButton, fmt } from '/js/cart.js';
+    import { initNav, buildNavDrawer } from '/js/nav.js';
 
     const hash = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
     if (hash.access_token) location.replace('/admin' + location.hash);
 
     initCartButton('#cart-toggle');
+    initNav('/');
 
     const header = document.getElementById('header');
     window.addEventListener('scroll', () => {
@@ -308,6 +313,7 @@
         const featured = _allProducts.filter(p => p.featured);
         renderGrid(featured.length ? featured : _allProducts.slice(0, 6));
         buildNavDropdowns(_allProducts);
+        buildNavDrawer(_allProducts, '/');
       } catch { renderGrid([]); }
     }
 
