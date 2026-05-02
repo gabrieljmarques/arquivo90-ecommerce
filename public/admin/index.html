@@ -114,7 +114,7 @@
       <h2 style="margin-bottom:2rem">Estoque</h2>
       <div class="admin-card">
         <table class="admin-table">
-          <thead><tr><th>Produto</th><th>Tamanho</th><th>Disponível</th><th>Reservado</th><th>Total</th><th></th></tr></thead>
+          <thead><tr><th>Produto</th><th>Tamanhos — disponível (reservado / total)</th></tr></thead>
           <tbody id="stock-tbody"><tr><td colspan="6" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
@@ -298,18 +298,17 @@
 
   window.openOrder = async (id) => {
     const { order } = await api(`/admin/orders/${id}`);
-    const STATUSES = ['pending','paid','preparing','shipped','delivered','cancelled','refunded'];
     showModal(`Pedido #${id.slice(-8).toUpperCase()}`, `
       <div style="display:grid;gap:0.8rem;margin-bottom:1.5rem;font-size:0.9rem">
-        <div><span style="color:#888;padding:1.5rem">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
-        <div><span style="color:#888;padding:1.5rem">Total:</span> R$ ${parseFloat(order.total).toFixed(2)}</div>
-        <div><span style="color:#888;padding:1.5rem">Endereço:</span> ${order.shipping_address?.rua}, ${order.shipping_address?.numero} — ${order.shipping_address?.cidade}/${order.shipping_address?.estado}</div>
-        <div><span style="color:#888;padding:1.5rem">Itens:</span> ${(order.order_items||[]).map(i=>`${i.product_name} ${i.size} x${i.quantity}`).join(', ')}</div>
+        <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
+        <div><span style="color:var(--ink-mid)">Total:</span> R$ ${(order.total/100).toFixed(2).replace('.',',')}</div>
+        <div><span style="color:var(--ink-mid)">Endereço:</span> ${order.shipping_address?.rua}, ${order.shipping_address?.numero} — ${order.shipping_address?.cidade}/${order.shipping_address?.estado}</div>
+        <div><span style="color:var(--ink-mid)">Itens:</span> ${(order.order_items||[]).map(i=>`${i.product_name} ${i.size} x${i.quantity}`).join(', ')}</div>
       </div>
       <div style="display:grid;gap:1rem">
         <div class="field">
           <label class="label">Status</label>
-          <select class="select" id="o-status">${STATUSES.map(s=>`<option value="${s}" ${s===order.status?'selected':''}>${s}</option>`).join('')}</select>
+          <select class="select" id="o-status">${Object.entries(STATUS_PT).map(([v,l])=>`<option value="${v}" ${v===order.status?'selected':''}>${l}</option>`).join('')}</select>
         </div>
         <div class="field">
           <label class="label">Código de rastreio</label>
@@ -470,20 +469,42 @@
   });
 
   // ── ESTOQUE ───────────────────────────────────────────────────────────────
+  const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
+
   async function loadStock() {
     try {
       const { stock } = await api('/admin/stock');
       document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
+
+      // Agrupa por produto
+      const grouped = {};
+      stock.forEach(s => {
+        const key = s.products.name;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(s);
+      });
+      Object.values(grouped).forEach(arr =>
+        arr.sort((a,b) => SIZE_ORDER.indexOf(a.size) - SIZE_ORDER.indexOf(b.size))
+      );
+
       const tbody = document.getElementById('stock-tbody');
-      tbody.innerHTML = stock.map(s => `
+      tbody.innerHTML = Object.entries(grouped).map(([name, sizes]) => `
         <tr>
-          <td style="font-family:var(--font-sc);font-size:0.9rem">${s.products.name}</td>
-          <td style="font-family:var(--font-sc)">${s.size}</td>
-          <td>${Math.max(0, s.stock - s.reserved)}</td>
-          <td style="color:${s.reserved>0?'var(--error)':'var(--ink-mid)'}">${s.reserved}</td>
-          <td>${s.stock}</td>
-          <td><button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="editStock('${s.id}','${s.products.name}','${s.size}',${s.stock})">Ajustar</button></td>
-        </tr>`).join('');
+          <td style="font-family:var(--font-sc);font-size:0.9rem;white-space:nowrap;vertical-align:middle">${name}</td>
+          <td>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+              ${sizes.map(s => {
+                const avail = Math.max(0, s.stock - s.reserved);
+                return `<div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;padding:0.5rem 0.75rem;border:1px solid var(--border);min-width:56px;text-align:center">
+                  <span style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.1em;color:var(--ink-mid)">${s.size}</span>
+                  <span style="font-family:var(--font-sc);font-size:1.1rem;${avail===0?'color:var(--ink-faint)':''}">${avail}</span>
+                  ${s.reserved>0?`<span style="font-size:0.6rem;color:var(--error)">${s.reserved} res.</span>`:''}
+                  <button class="btn btn--ghost" style="padding:0.15rem 0.5rem;font-size:0.6rem;margin-top:0.2rem" onclick="editStock('${s.id}','${name}','${s.size}',${s.stock})">±</button>
+                </div>`;
+              }).join('')}
+            </div>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="2" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
     } catch(e) { console.error(e); }
   }
 

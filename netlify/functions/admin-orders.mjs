@@ -73,6 +73,25 @@ export default async (req, context) => {
     const { data: after, error } = await supabase.from('orders').update(updates).eq('id', id).select().single();
     if (error) return Response.json({ error: error.message }, { status: 500 });
 
+    // Ao cancelar/reembolsar: libera estoque reservado
+    const CANCEL_STATUSES = ['cancelled', 'refunded'];
+    if (updates.status && CANCEL_STATUSES.includes(updates.status) && !CANCEL_STATUSES.includes(before.status)) {
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('product_id, size, quantity')
+        .eq('order_id', id);
+
+      for (const item of (items || [])) {
+        await supabase.rpc('release_stock', {
+          p_product_id: item.product_id,
+          p_size:       item.size,
+          p_quantity:   item.quantity
+        }).catch(() => {});
+      }
+
+      await supabase.from('stock_reservations').delete().eq('order_id', id);
+    }
+
     await logAudit(supabase, { adminEmail: user.email, action: 'update_order', entity: 'order', entityId: id, before, after });
     return Response.json({ order: after });
   }
