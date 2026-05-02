@@ -78,7 +78,7 @@ export function buildNavDrawer(products, activePath) {
     ${section('Esportes', esportes, 'esporte')}
     ${section('Categorias', subcats, 'subcategoria')}
     ${section('Times', times, 'time_ref')}
-    <a href="/sobre" class="nav-drawer__link nav-drawer__link--top${activePath === '/sobre' ? ' active' : ''}">Sobre</a>`;
+    <a href="/contato" class="nav-drawer__link nav-drawer__link--top${activePath === '/contato' ? ' active' : ''}">Entre em Contato</a>`;
 
   body.querySelectorAll('.nav-drawer__section-toggle').forEach(btn => {
     btn.addEventListener('click', () => {

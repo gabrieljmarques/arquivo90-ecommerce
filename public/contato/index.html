@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entre em Contato — Arquivo 90</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/img/favicon.ico">
+  <style>.page-content{padding:4rem 0 6rem}.page-breadcrumb{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2rem}.page-breadcrumb a{color:inherit}.page-title{font-family:var(--font-sc);font-size:clamp(1.8rem,4vw,2.8rem);letter-spacing:0.04em;font-weight:700;margin-bottom:0.5rem}.page-subtitle{font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:3rem}.page-section-title{font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-mid);margin:2.5rem 0 1rem;border-bottom:1px solid var(--border);padding-bottom:0.5rem}.page-body p{font-family:var(--font-sc);font-size:0.95rem;line-height:1.8;color:var(--ink);margin-bottom:1rem}.page-body ul{font-family:var(--font-sc);font-size:0.95rem;line-height:1.8;color:var(--ink);margin-bottom:1rem;padding-left:1.5rem}.page-note{font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.05em;color:var(--ink-mid);margin-top:1rem}details summary{font-family:var(--font-sc);font-size:0.95rem;font-weight:600;cursor:pointer;padding:1rem 0;border-bottom:1px solid var(--border);list-style:none;display:flex;justify-content:space-between;align-items:center}details summary::-webkit-details-marker{display:none}details summary::after{content:"+";font-family:var(--font-mono);font-size:1rem;color:var(--ink-mid);transition:transform 0.2s}details[open] summary::after{content:"−"}details .faq-answer{font-family:var(--font-sc);font-size:0.9rem;line-height:1.8;color:var(--ink-mid);padding:1rem 0 0.5rem}.contato-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;margin-top:3rem}.contato-form{display:flex;flex-direction:column;gap:1rem}.contato-input{width:100%;padding:0.75rem 1rem;border:1px solid var(--border);background:var(--surface);font-family:var(--font-sc);font-size:0.9rem;color:var(--ink);transition:border-color 0.2s}.contato-input:focus{outline:none;border-color:var(--ink)}.contato-textarea{min-height:180px;resize:vertical}.contato-sac h2{font-family:var(--font-sc);font-size:1.2rem;font-weight:700;margin-bottom:1.5rem}.contato-sac-item{margin-bottom:1rem}.contato-sac-label{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:0.3rem}.contato-sac-value{font-family:var(--font-sc);font-size:0.95rem;color:var(--ink)}.contato-sac-value a{color:var(--ink);text-decoration:underline}@media(max-width:768px){.contato-grid{grid-template-columns:1fr;gap:2.5rem}}</style>
+</head>
+<body>
+  <div class="announcement-bar" id="announcement-bar">Entrega para todo o Brasil &nbsp;·&nbsp; Algodão 210g &nbsp;·&nbsp; DTF 300dpi</div>
+  <header class="header scrolled" id="header">
+    <div class="header__main">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+      <a href="/" class="header__logo" aria-label="Arquivo 90 — início">
+        <img src="/img/logo.png" alt="Arquivo 90" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="header__logo-text" style="display:none">ARQUIVO 90</span>
+      </a>
+      <div class="header__search">
+        <input type="search" class="search-input" id="search-input" placeholder="Pesquisar produtos..." autocomplete="off">
+        <button class="search-btn" aria-label="Pesquisar">⌕</button>
+      </div>
+      <div class="header__actions">
+        <button class="cart-btn" id="cart-toggle" aria-label="Abrir carrinho">
+          <svg class="cart-btn__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          <span class="cart-btn__label">Carrinho</span>
+          <span class="cart-count" id="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+    <nav class="header__nav" id="main-nav">
+      <a href="/">Início</a>
+      <div class="nav-dropdown-wrap" id="nav-produtos" style="display:none"><button class="nav-dropdown-trigger">Produtos <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg></button><div class="nav-dropdown-menu" id="nav-produtos-menu"></div></div>
+      <div class="nav-dropdown-wrap" id="nav-esportes" style="display:none"><button class="nav-dropdown-trigger">Esportes <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg></button><div class="nav-dropdown-menu" id="nav-esportes-menu"></div></div>
+      <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none"><button class="nav-dropdown-trigger">Categorias <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg></button><div class="nav-dropdown-menu" id="nav-categorias-menu"></div></div>
+      <div class="nav-dropdown-wrap" id="nav-times" style="display:none"><button class="nav-dropdown-trigger">Times <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg></button><div class="nav-dropdown-menu" id="nav-times-menu"></div></div>
+      <a href="/contato">Entre em Contato</a>
+    </nav>
+  </header>
+
+  <div class="page-content">
+    <div class="container--narrow">
+      <div class="page-breadcrumb"><a href="/">Início</a> / Entre em Contato</div>
+      <h1 class="page-title">Entre em Contato</h1>
+      <p class="page-subtitle">Estamos aqui para ajudar</p>
+
+      <div class="contato-grid">
+        <div class="contato-form-wrap">
+          <form class="contato-form" action="mailto:contato@arquivo90.com.br" method="get">
+            <div>
+              <label class="contato-sac-label" for="nome">Nome</label>
+              <input class="contato-input" type="text" id="nome" name="nome" placeholder="Seu nome" required>
+            </div>
+            <div>
+              <label class="contato-sac-label" for="email">Email</label>
+              <input class="contato-input" type="email" id="email" name="email" placeholder="seu@email.com" required>
+            </div>
+            <div>
+              <label class="contato-sac-label" for="assunto">Assunto</label>
+              <input class="contato-input" type="text" id="assunto" name="subject" placeholder="Sobre o que você quer falar?">
+            </div>
+            <div>
+              <label class="contato-sac-label" for="mensagem">Mensagem</label>
+              <textarea class="contato-input contato-textarea" id="mensagem" name="body" placeholder="Sua mensagem..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn--primary">Enviar mensagem</button>
+          </form>
+          <p class="page-note">O formulário de contato direto está em breve. Por enquanto, use o email ou WhatsApp abaixo para falar com a gente.</p>
+        </div>
+
+        <div class="contato-sac">
+          <h2>SAC — Atendimento ao Cliente</h2>
+          <div class="contato-sac-item">
+            <p class="contato-sac-label">Email</p>
+            <p class="contato-sac-value"><a href="mailto:contato@arquivo90.com.br">contato@arquivo90.com.br</a></p>
+          </div>
+          <div class="contato-sac-item">
+            <p class="contato-sac-label">Telefone / WhatsApp</p>
+            <p class="contato-sac-value"><a href="https://wa.me/5511914267653" target="_blank" rel="noopener noreferrer">(11) 91426-7653</a></p>
+          </div>
+          <div class="contato-sac-item">
+            <p class="contato-sac-label">Horário de atendimento</p>
+            <p class="contato-sac-value">Segunda a Sexta, 9h às 18h</p>
+          </div>
+          <div class="contato-sac-item" style="margin-top:2rem">
+            <a href="https://wa.me/5511914267653" target="_blank" rel="noopener noreferrer" class="btn btn--ghost">Falar pelo WhatsApp →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer__main">
+      <div class="container footer__cols">
+        <div class="footer__col footer__col--brand">
+          <p class="footer__brand">Arquivo 90</p>
+          <p class="footer__tagline">Memória em Tecido &nbsp;·&nbsp; São Paulo</p>
+          <div class="footer__social">
+            <a href="https://instagram.com/arquivo90.oficial" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/></svg></a>
+            <a href="https://wa.me/5511914267653" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></a>
+          </div>
+        </div>
+        <div class="footer__col">
+          <p class="footer__col-title">Sobre Nós</p>
+          <nav class="footer__col-nav">
+            <a href="/sobre">Quem Somos</a>
+            <a href="/duvidas">Dúvidas Frequentes</a>
+          </nav>
+        </div>
+        <div class="footer__col">
+          <p class="footer__col-title">Políticas</p>
+          <nav class="footer__col-nav">
+            <a href="/privacidade">Privacidade</a>
+            <a href="/termos">Termos de Uso</a>
+            <a href="/trocas-devolucoes">Trocas e Devoluções</a>
+            <a href="/entrega">Entrega</a>
+          </nav>
+        </div>
+        <div class="footer__col">
+          <p class="footer__col-title">Fale Conosco</p>
+          <p class="footer__contact-item">contato@arquivo90.com.br</p>
+          <p class="footer__contact-item">(11) 91426-7653</p>
+          <a href="/contato" class="footer__contact-link">Enviar mensagem →</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <div class="container footer__bottom-inner">
+        <p class="footer__sub">© 2026 &mdash; São Paulo, BR</p>
+        <a href="/admin" class="footer__sub" style="opacity:0.4">Admin</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module">
+    import { initCartButton } from '/js/cart.js';
+    import { initNav, buildNavDrawer } from '/js/nav.js';
+    initCartButton('#cart-toggle');
+    initNav('/contato');
+    function buildNavDropdowns(products) {
+      const tipos = [...new Set(products.map(p => p.tipo).filter(Boolean))].sort();
+      const subcats = [...new Set(products.map(p => p.subcategoria).filter(Boolean))].sort();
+      const esportes = [...new Set(products.map(p => p.esporte).filter(Boolean))].sort();
+      const times = [...new Set(products.map(p => p.time_ref).filter(Boolean))].sort();
+      const fill = (menuId, wrapId, items, param) => {
+        if (!items.length) return;
+        document.getElementById(menuId).innerHTML = items.map(v => `<a href="/produtos?${param}=${encodeURIComponent(v)}">${v}</a>`).join('');
+        document.getElementById(wrapId).style.display = '';
+      };
+      fill('nav-produtos-menu','nav-produtos',tipos,'tipo');
+      fill('nav-esportes-menu','nav-esportes',esportes,'esporte');
+      fill('nav-categorias-menu','nav-categorias',subcats,'subcategoria');
+      fill('nav-times-menu','nav-times',times,'time_ref');
+    }
+    fetch('/api/products').then(r=>r.json()).then(({products})=>{
+      buildNavDropdowns(products??[]);
+      buildNavDrawer(products??[],'/contato');
+    }).catch(()=>{});
+    const header=document.getElementById('header');
+    window.addEventListener('scroll',()=>{header.classList.toggle('scrolled',scrollY>40);},{passive:true});
+    document.getElementById('search-input')?.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){const q=e.target.value.trim();if(q)location.href=`/produtos?q=${encodeURIComponent(q)}`;}
+    });
+  </script>
+</body>
+</html>
