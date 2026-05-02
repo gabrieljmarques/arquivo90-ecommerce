@@ -1,8 +1,5 @@
 {
   "outputDirectory": "public",
-  "functions": {
-    "api/**": { "runtime": "nodejs20.x" }
-  },
   "rewrites": [
     { "source": "/produto/:path*", "destination": "/produto/index.html" },
     { "source": "/checkout",       "destination": "/checkout/index.html" },
