@@ -114,7 +114,7 @@
       <h2 style="margin-bottom:2rem">Estoque</h2>
       <div class="admin-card">
         <table class="admin-table">
-          <thead><tr><th>Produto</th><th>Tamanhos — disponível (reservado / total)</th></tr></thead>
+          <thead><tr><th>Produto</th><th>Tam.</th><th>Disponível</th><th>Reservado</th><th>Total</th><th>Vendidos</th><th></th></tr></thead>
           <tbody id="stock-tbody"><tr><td colspan="6" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
@@ -506,11 +506,12 @@
       const { stock } = await api('/admin/stock');
       document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
 
-      // Agrupa por produto
+      // Agrupa por produto mantendo ordem de display
       const grouped = {};
+      const productOrder = [];
       stock.forEach(s => {
         const key = s.products.name;
-        if (!grouped[key]) grouped[key] = [];
+        if (!grouped[key]) { grouped[key] = []; productOrder.push(key); }
         grouped[key].push(s);
       });
       Object.values(grouped).forEach(arr =>
@@ -518,23 +519,27 @@
       );
 
       const tbody = document.getElementById('stock-tbody');
-      tbody.innerHTML = Object.entries(grouped).map(([name, sizes]) => `
-        <tr>
-          <td style="font-family:var(--font-sc);font-size:0.9rem;white-space:nowrap;vertical-align:middle">${name}</td>
-          <td>
-            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
-              ${sizes.map(s => {
-                const avail = Math.max(0, s.stock - s.reserved);
-                return `<div style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;padding:0.5rem 0.75rem;border:1px solid var(--border);min-width:56px;text-align:center">
-                  <span style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.1em;color:var(--ink-mid)">${s.size}</span>
-                  <span style="font-family:var(--font-sc);font-size:1.1rem;${avail===0?'color:var(--ink-faint)':''}">${avail}</span>
-                  ${s.reserved>0?`<span style="font-size:0.6rem;color:var(--error)">${s.reserved} res.</span>`:''}
-                  <button class="btn btn--ghost" style="padding:0.15rem 0.5rem;font-size:0.6rem;margin-top:0.2rem" onclick="editStock('${s.id}','${name}','${s.size}',${s.stock})">±</button>
-                </div>`;
-              }).join('')}
-            </div>
-          </td>
-        </tr>`).join('') || '<tr><td colspan="2" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
+      const rows = [];
+      productOrder.forEach(name => {
+        const sizes = grouped[name];
+        sizes.forEach((s, i) => {
+          const avail = Math.max(0, s.stock - s.reserved);
+          const isLast = i === sizes.length - 1;
+          const borderBottom = isLast ? '' : 'border-bottom:1px solid var(--surface);';
+          rows.push(`<tr>
+            ${i === 0
+              ? `<td rowspan="${sizes.length}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">${name}</td>`
+              : ''}
+            <td style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;${borderBottom}">${s.size}</td>
+            <td style="${borderBottom}${avail===0?'color:var(--ink-faint)':''}">${avail}</td>
+            <td style="${borderBottom}${s.reserved>0?'color:var(--error);font-weight:600':'color:var(--ink-mid)'}">${s.reserved}</td>
+            <td style="${borderBottom}color:var(--ink-mid)">${s.stock}</td>
+            <td style="${borderBottom}${s.sold>0?'':'color:var(--ink-faint)'}">${s.sold}</td>
+            <td style="${borderBottom}"><button class="btn btn--ghost" style="padding:0.25rem 0.6rem;font-size:0.65rem" onclick="editStock('${s.id}','${name}','${s.size}',${s.stock})">Ajustar</button></td>
+          </tr>`);
+        });
+      });
+      tbody.innerHTML = rows.join('') || '<tr><td colspan="7" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
     } catch(e) { console.error(e); }
   }
 

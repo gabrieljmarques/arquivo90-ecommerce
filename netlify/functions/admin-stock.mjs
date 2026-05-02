@@ -9,17 +9,40 @@ export default async (req) => {
 
   // ── GET — lista estoque de todos os produtos ───────────────────────────────
   if (req.method === 'GET') {
-    const { data, error } = await supabase
-      .from('product_sizes')
-      .select(`
-        id, size, stock, reserved,
-        products!inner(id, name, slug, active, deleted_at)
-      `)
-      .is('products.deleted_at', null)
-      .order('size', { ascending: true });
+    const [sizesResult, ordersResult] = await Promise.all([
+      supabase
+        .from('product_sizes')
+        .select('id, size, stock, reserved, products!inner(id, name, slug, active, deleted_at)')
+        .is('products.deleted_at', null)
+        .order('size', { ascending: true }),
+      supabase
+        .from('orders')
+        .select('id')
+        .in('status', ['paid', 'preparing', 'shipped', 'delivered'])
+    ]);
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
-    return Response.json({ stock: data });
+    if (sizesResult.error) return Response.json({ error: sizesResult.error.message }, { status: 500 });
+
+    // Contabiliza vendidos por product_id:size
+    const soldMap = {};
+    const orderIds = (ordersResult.data || []).map(o => o.id);
+    if (orderIds.length) {
+      const { data: items } = await supabase
+        .from('order_items')
+        .select('product_id, size, quantity')
+        .in('order_id', orderIds);
+      (items || []).forEach(i => {
+        const k = `${i.product_id}:${i.size}`;
+        soldMap[k] = (soldMap[k] || 0) + i.quantity;
+      });
+    }
+
+    const stock = (sizesResult.data || []).map(s => ({
+      ...s,
+      sold: soldMap[`${s.products.id}:${s.size}`] || 0
+    }));
+
+    return Response.json({ stock });
   }
 
   // ── PUT — atualiza estoque de um tamanho específico ────────────────────────
