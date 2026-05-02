@@ -1,3 +1,4 @@
+﻿import { json } from '../utils/response.js';
 import { supabase } from '../utils/supabase.js';
 
 export default async (req) => {
@@ -13,10 +14,10 @@ export default async (req) => {
 
   if (error) {
     console.error('expire reservations fetch:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, { status: 500 });
   }
 
-  if (!expired?.length) return Response.json({ expired: 0 });
+  if (!expired?.length) return json({ expired: 0 });
 
   const orderIds = [...new Set(expired.map(r => r.order_id))];
 
@@ -33,5 +34,5 @@ export default async (req) => {
   }
 
   console.log(`Expired ${orderIds.length} reservation(s).`);
-  return Response.json({ expired: orderIds.length });
+  return json({ expired: orderIds.length });
 };

@@ -1,8 +1,9 @@
+﻿import { json } from '../utils/response.js';
 import { getSupabase } from '../utils/supabase.js';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
-  if (req.method !== 'GET')    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  if (req.method !== 'GET')    return json({ error: 'Method not allowed' }, { status: 405 });
 
   try {
     const supabase = getSupabase();
@@ -19,7 +20,7 @@ export default async (req) => {
 
     if (error) {
       console.error('products fetch error:', error.message);
-      return Response.json({ error: error.message }, { status: 500 });
+      return json({ error: error.message }, { status: 500 });
     }
 
     const products = data.map(p => ({
@@ -31,11 +32,11 @@ export default async (req) => {
       }))
     }));
 
-    return Response.json({ products }, {
+    return json({ products }, {
       headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
     });
   } catch (e) {
     console.error('products error:', e.message);
-    return Response.json({ error: e.message }, { status: 500 });
+    return json({ error: e.message }, { status: 500 });
   }
 };

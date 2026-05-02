@@ -1,3 +1,4 @@
+﻿import { json } from '../utils/response.js';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { supabase } from '../utils/supabase.js';
 
@@ -19,10 +20,10 @@ export default async (req) => {
 
   if (error) {
     console.error('fetch webhook_events:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return json({ error: error.message }, { status: 500 });
   }
 
-  if (!events?.length) return Response.json({ processed: 0 });
+  if (!events?.length) return json({ processed: 0 });
 
   let processed = 0;
   for (const event of events) {
@@ -40,7 +41,7 @@ export default async (req) => {
     }
   }
 
-  return Response.json({ processed });
+  return json({ processed });
 };
 
 async function processEvent(event) {

@@ -1,41 +1,42 @@
-import crypto                        from 'crypto';
+import { json } from '../utils/response.js';
+import crypto from 'crypto';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { supabase }                   from '../utils/supabase.js';
-import { rateLimit, getClientIp }     from '../utils/ratelimit.js';
+import { supabase }               from '../utils/supabase.js';
+import { rateLimit, getClientIp } from '../utils/ratelimit.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE  = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
-  if (req.method !== 'POST')    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  if (req.method !== 'POST')    return json({ error: 'Method not allowed' }, { status: 405 });
 
   const ip      = getClientIp(req);
   const allowed = await rateLimit(`checkout:${ip}`, 5, 600);
   if (!allowed) {
-    return Response.json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }, { status: 429 });
+    return json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }, { status: 429 });
   }
 
   let body;
   try { body = await req.json(); }
-  catch { return Response.json({ error: 'Payload inválido' }, { status: 400 }); }
+  catch { return json({ error: 'Payload inválido' }, { status: 400 }); }
 
   const { items, customer, shipping_address, idempotency_key } = body;
 
   if (!Array.isArray(items) || !items.length)
-    return Response.json({ error: 'Carrinho vazio' }, { status: 400 });
+    return json({ error: 'Carrinho vazio' }, { status: 400 });
 
   if (!customer?.name?.trim() || !customer?.email)
-    return Response.json({ error: 'Nome e email são obrigatórios' }, { status: 400 });
+    return json({ error: 'Nome e email são obrigatórios' }, { status: 400 });
 
   if (!EMAIL_RE.test(customer.email))
-    return Response.json({ error: 'Email inválido' }, { status: 400 });
+    return json({ error: 'Email inválido' }, { status: 400 });
 
   if (!idempotency_key || !UUID_RE.test(idempotency_key))
-    return Response.json({ error: 'Chave de idempotência inválida' }, { status: 400 });
+    return json({ error: 'Chave de idempotência inválida' }, { status: 400 });
 
   if (!shipping_address?.cep || !shipping_address?.rua || !shipping_address?.cidade)
-    return Response.json({ error: 'Endereço incompleto' }, { status: 400 });
+    return json({ error: 'Endereço incompleto' }, { status: 400 });
 
   const cleanCustomer = {
     name:  customer.name.trim().slice(0, 100),
@@ -54,7 +55,7 @@ export default async (req) => {
     const prefClient = new Preference(mpClient);
     try {
       const pref = await prefClient.get({ preferenceId: existing.mp_preference_id });
-      return Response.json({ init_point: pref.init_point, order_id: existing.id });
+      return json({ init_point: pref.init_point, order_id: existing.id });
     } catch {
       // MP preference expirou — cria nova abaixo
     }
@@ -69,7 +70,7 @@ export default async (req) => {
     .is('deleted_at', null);
 
   if (prodErr || products.length !== productIds.length) {
-    return Response.json({ error: 'Um ou mais produtos não estão disponíveis' }, { status: 400 });
+    return json({ error: 'Um ou mais produtos não estão disponíveis' }, { status: 400 });
   }
 
   const productMap = Object.fromEntries(products.map(p => [p.id, p]));
@@ -78,7 +79,7 @@ export default async (req) => {
   for (const item of items) {
     if (!item.product_id || !item.size || !item.quantity || item.quantity < 1) {
       await releaseAll(reserved);
-      return Response.json({ error: 'Item inválido no carrinho' }, { status: 400 });
+      return json({ error: 'Item inválido no carrinho' }, { status: 400 });
     }
 
     const { data: ok, error: resErr } = await supabase.rpc('reserve_stock', {
@@ -90,7 +91,7 @@ export default async (req) => {
 
     if (resErr || !ok) {
       await releaseAll(reserved);
-      return Response.json({
+      return json({
         error: `Tamanho ${item.size} sem estoque disponível para "${productMap[item.product_id]?.name}"`
       }, { status: 409 });
     }
@@ -121,7 +122,7 @@ export default async (req) => {
   if (orderErr) {
     await releaseAll(reserved);
     console.error('order insert error:', orderErr.message);
-    return Response.json({ error: 'Erro ao criar pedido' }, { status: 500 });
+    return json({ error: 'Erro ao criar pedido' }, { status: 500 });
   }
 
   await supabase.from('order_items').insert(
@@ -182,12 +183,12 @@ export default async (req) => {
     console.error('MP preference error:', mpErr.message);
     await releaseAll(reserved);
     await supabase.from('orders').delete().eq('id', orderId);
-    return Response.json({ error: 'Erro ao iniciar pagamento. Tente novamente.' }, { status: 502 });
+    return json({ error: 'Erro ao iniciar pagamento. Tente novamente.' }, { status: 502 });
   }
 
   await supabase.from('orders').update({ mp_preference_id: pref.id }).eq('id', orderId);
 
-  return Response.json({ init_point: pref.init_point, order_id: orderId });
+  return json({ init_point: pref.init_point, order_id: orderId });
 };
 
 async function releaseAll(reservations) {

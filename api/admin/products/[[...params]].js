@@ -1,3 +1,4 @@
+import { json } from '../../utils/response.js';
 import { getSupabase }          from '../../utils/supabase.js';
 import { verifyAdmin, logAudit } from '../../utils/auth.js';
 
@@ -6,14 +7,13 @@ export default async (req) => {
 
   const supabase = getSupabase();
   const user = await verifyAdmin(req);
-  if (!user) return Response.json({ error: 'Não autorizado' }, { status: 401 });
+  if (!user) return json({ error: 'Não autorizado' }, { status: 401 });
 
   const url      = new URL(req.url);
   const segments = url.pathname.replace('/api/admin/products', '').split('/').filter(Boolean);
   const id       = segments[0] || null;
   const action   = segments[1] || null;
 
-  // ── GET /api/admin/products ───────────────────────────────────────────────
   if (req.method === 'GET' && !id) {
     const { data, error } = await supabase
       .from('products')
@@ -25,11 +25,10 @@ export default async (req) => {
       .is('deleted_at', null)
       .order('display_order', { ascending: true });
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
-    return Response.json({ products: data });
+    if (error) return json({ error: error.message }, { status: 500 });
+    return json({ products: data });
   }
 
-  // ── GET /api/admin/products/:id ───────────────────────────────────────────
   if (req.method === 'GET' && id) {
     const { data, error } = await supabase
       .from('products')
@@ -38,14 +37,13 @@ export default async (req) => {
       .is('deleted_at', null)
       .single();
 
-    if (error || !data) return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
-    return Response.json({ product: data });
+    if (error || !data) return json({ error: 'Produto não encontrado' }, { status: 404 });
+    return json({ product: data });
   }
 
-  // ── POST /api/admin/products ──────────────────────────────────────────────
   if (req.method === 'POST' && !id) {
     let body;
-    try { body = await req.json(); } catch { return Response.json({ error: 'Payload inválido' }, { status: 400 }); }
+    try { body = await req.json(); } catch { return json({ error: 'Payload inválido' }, { status: 400 }); }
 
     const { name, slug, subtitle, description, price, display_order,
             tipo, modelagem, genero, esporte, subcategoria, cor,
@@ -54,7 +52,7 @@ export default async (req) => {
             active, featured, colors } = body;
 
     if (!name?.trim() || !slug?.trim() || !price)
-      return Response.json({ error: 'Nome, slug e preço são obrigatórios' }, { status: 400 });
+      return json({ error: 'Nome, slug e preço são obrigatórios' }, { status: 400 });
 
     const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
@@ -84,8 +82,8 @@ export default async (req) => {
     }).select().single();
 
     if (error) {
-      if (error.code === '23505') return Response.json({ error: 'Slug já existe' }, { status: 409 });
-      return Response.json({ error: error.message }, { status: 500 });
+      if (error.code === '23505') return json({ error: 'Slug já existe' }, { status: 409 });
+      return json({ error: error.message }, { status: 500 });
     }
 
     const DEFAULT_SIZES = ['P','M','G','GG'];
@@ -98,16 +96,15 @@ export default async (req) => {
     await supabase.from('product_sizes').insert(sizeRows);
 
     await logAudit(supabase, { adminEmail: user.email, action: 'create_product', entity: 'product', entityId: data.id, after: data });
-    return Response.json({ product: data }, { status: 201 });
+    return json({ product: data }, { status: 201 });
   }
 
-  // ── PUT /api/admin/products/reorder ───────────────────────────────────────
   if (req.method === 'PUT' && id === 'reorder') {
     let body;
-    try { body = await req.json(); } catch { return Response.json({ error: 'Payload inválido' }, { status: 400 }); }
+    try { body = await req.json(); } catch { return json({ error: 'Payload inválido' }, { status: 400 }); }
 
     const { order } = body;
-    if (!Array.isArray(order)) return Response.json({ error: 'Formato inválido' }, { status: 400 });
+    if (!Array.isArray(order)) return json({ error: 'Formato inválido' }, { status: 400 });
 
     for (const item of order) {
       await supabase.from('products')
@@ -116,16 +113,15 @@ export default async (req) => {
     }
 
     await logAudit(supabase, { adminEmail: user.email, action: 'reorder_products', entity: 'product', after: { order } });
-    return Response.json({ ok: true });
+    return json({ ok: true });
   }
 
-  // ── PUT /api/admin/products/:id ───────────────────────────────────────────
   if (req.method === 'PUT' && id && !action) {
     let body;
-    try { body = await req.json(); } catch { return Response.json({ error: 'Payload inválido' }, { status: 400 }); }
+    try { body = await req.json(); } catch { return json({ error: 'Payload inválido' }, { status: 400 }); }
 
     const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
-    if (!before) return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
+    if (!before) return json({ error: 'Produto não encontrado' }, { status: 404 });
 
     const allowed = ['name','slug','sku','subtitle','description','price','display_order','peso_g','tipo','modelagem','genero','esporte','subcategoria','cor','time_ref','ano_ref','tags','meta_title','meta_description','image_url','active','featured'];
     const updates = Object.fromEntries(
@@ -137,21 +133,20 @@ export default async (req) => {
     const { data: after, error } = await supabase.from('products')
       .update(updates).eq('id', id).is('deleted_at', null).select().single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) return json({ error: error.message }, { status: 500 });
 
     await logAudit(supabase, { adminEmail: user.email, action: 'update_product', entity: 'product', entityId: id, before, after });
-    return Response.json({ product: after });
+    return json({ product: after });
   }
 
-  // ── DELETE /api/admin/products/:id ────────────────────────────────────────
   if (req.method === 'DELETE' && id) {
     const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
-    if (!before) return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
+    if (!before) return json({ error: 'Produto não encontrado' }, { status: 404 });
 
     await supabase.from('products').update({ active: false, deleted_at: new Date().toISOString() }).eq('id', id);
     await logAudit(supabase, { adminEmail: user.email, action: 'delete_product', entity: 'product', entityId: id, before });
-    return Response.json({ ok: true });
+    return json({ ok: true });
   }
 
-  return Response.json({ error: 'Not found' }, { status: 404 });
+  return json({ error: 'Not found' }, { status: 404 });
 };

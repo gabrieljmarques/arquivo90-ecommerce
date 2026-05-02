@@ -1,3 +1,4 @@
+import { json } from '../../utils/response.js';
 import { supabase }             from '../../utils/supabase.js';
 import { verifyAdmin, logAudit } from '../../utils/auth.js';
 
@@ -8,13 +9,12 @@ export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
 
   const user = await verifyAdmin(req);
-  if (!user) return Response.json({ error: 'Não autorizado' }, { status: 401 });
+  if (!user) return json({ error: 'Não autorizado' }, { status: 401 });
 
   const url      = new URL(req.url);
   const segments = url.pathname.replace('/api/admin/orders', '').split('/').filter(Boolean);
   const id       = segments[0] || null;
 
-  // ── GET /api/admin/orders ─────────────────────────────────────────────────
   if (req.method === 'GET' && !id) {
     const page   = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
     const status = url.searchParams.get('status') || null;
@@ -31,12 +31,11 @@ export default async (req) => {
     if (search) query = query.or(`customer_email.ilike.%${search}%,customer_name.ilike.%${search}%`);
 
     const { data, error, count } = await query;
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) return json({ error: error.message }, { status: 500 });
 
-    return Response.json({ orders: data, total: count, page, pages: Math.ceil(count / PAGE_SIZE) });
+    return json({ orders: data, total: count, page, pages: Math.ceil(count / PAGE_SIZE) });
   }
 
-  // ── GET /api/admin/orders/:id ─────────────────────────────────────────────
   if (req.method === 'GET' && id) {
     const { data, error } = await supabase
       .from('orders')
@@ -44,22 +43,21 @@ export default async (req) => {
       .eq('id', id)
       .single();
 
-    if (error || !data) return Response.json({ error: 'Pedido não encontrado' }, { status: 404 });
-    return Response.json({ order: data });
+    if (error || !data) return json({ error: 'Pedido não encontrado' }, { status: 404 });
+    return json({ order: data });
   }
 
-  // ── PUT /api/admin/orders/:id ─────────────────────────────────────────────
   if (req.method === 'PUT' && id) {
     let body;
-    try { body = await req.json(); } catch { return Response.json({ error: 'Payload inválido' }, { status: 400 }); }
+    try { body = await req.json(); } catch { return json({ error: 'Payload inválido' }, { status: 400 }); }
 
     const { data: before } = await supabase.from('orders').select('*').eq('id', id).single();
-    if (!before) return Response.json({ error: 'Pedido não encontrado' }, { status: 404 });
+    if (!before) return json({ error: 'Pedido não encontrado' }, { status: 404 });
 
     const updates = {};
     if (body.status) {
       if (!VALID_STATUSES.includes(body.status))
-        return Response.json({ error: 'Status inválido' }, { status: 400 });
+        return json({ error: 'Status inválido' }, { status: 400 });
       updates.status = body.status;
       if (body.status === 'shipped') updates.shipped_at = new Date().toISOString();
     }
@@ -68,10 +66,10 @@ export default async (req) => {
     if (body.notes         !== undefined) updates.notes         = body.notes?.trim()          || null;
 
     if (!Object.keys(updates).length)
-      return Response.json({ error: 'Nenhum campo para atualizar' }, { status: 400 });
+      return json({ error: 'Nenhum campo para atualizar' }, { status: 400 });
 
     const { data: after, error } = await supabase.from('orders').update(updates).eq('id', id).select().single();
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) return json({ error: error.message }, { status: 500 });
 
     const CANCEL_STATUSES = ['cancelled', 'refunded'];
     if (updates.status && CANCEL_STATUSES.includes(updates.status) && !CANCEL_STATUSES.includes(before.status)) {
@@ -93,8 +91,8 @@ export default async (req) => {
     }
 
     await logAudit(supabase, { adminEmail: user.email, action: 'update_order', entity: 'order', entityId: id, before, after });
-    return Response.json({ order: after });
+    return json({ order: after });
   }
 
-  return Response.json({ error: 'Not found' }, { status: 404 });
+  return json({ error: 'Not found' }, { status: 404 });
 };

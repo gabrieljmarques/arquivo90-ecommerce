@@ -1,12 +1,12 @@
+import { json } from '../utils/response.js';
 import { getSupabase } from '../utils/supabase.js';
 
 export default async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
-  if (req.method !== 'GET')    return Response.json({ error: 'Method not allowed' }, { status: 405 });
+  if (req.method !== 'GET')    return json({ error: 'Method not allowed' }, { status: 405 });
 
-  // Vercel injects dynamic path params as query string params
   const slug = new URL(req.url).searchParams.get('slug');
-  if (!slug) return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
+  if (!slug) return json({ error: 'Produto não encontrado' }, { status: 404 });
 
   try {
     const supabase = getSupabase();
@@ -23,7 +23,7 @@ export default async (req) => {
       .single();
 
     if (error || !data) {
-      return Response.json({ error: 'Produto não encontrado' }, { status: 404 });
+      return json({ error: 'Produto não encontrado' }, { status: 404 });
     }
 
     const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
@@ -47,11 +47,11 @@ export default async (req) => {
         })
     };
 
-    return Response.json({ product }, {
+    return json({ product }, {
       headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' }
     });
   } catch (e) {
     console.error('product error:', e.message);
-    return Response.json({ error: e.message }, { status: 500 });
+    return json({ error: e.message }, { status: 500 });
   }
 };
