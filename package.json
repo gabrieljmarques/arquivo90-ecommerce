@@ -11,6 +11,6 @@
     "mercadopago": "^2.4.0"
   },
   "devDependencies": {
-    "@netlify/functions": "^2.8.0"
+    "vercel": "^44.0.0"
   }
 }
