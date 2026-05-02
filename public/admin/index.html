@@ -174,7 +174,7 @@
   document.getElementById('btn-google').addEventListener('click', async () => {
     await sb.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: 'https://arquivo90.com.br/admin' }
+      options: { redirectTo: `${location.origin}/admin` }
     });
   });
 
