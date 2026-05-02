@@ -133,7 +133,7 @@ h3 { font-size: 1.1rem; }
 .sidebar__nav a.active { color: var(--ink); background: var(--surface); border-left: 2px solid var(--ink); }
 .sidebar__footer { margin-top: auto; padding: 1.5rem 1.75rem; }
 
-.main { margin-left: 200px; padding: 2rem 1.5rem; width: calc(100% - 200px); max-width: none; }
+.main { margin-left: 200px; padding: 2rem 0.75rem; width: calc(100% - 200px); }
 
 .page { display: none; }
 .page.active { display: block; }
