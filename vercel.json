@@ -27,8 +27,4 @@
       ]
     }
   ],
-  "crons": [
-    { "path": "/api/cron/process-webhooks",    "schedule": "* * * * *" },
-    { "path": "/api/cron/expire-reservations", "schedule": "*/5 * * * *" }
-  ]
 }
