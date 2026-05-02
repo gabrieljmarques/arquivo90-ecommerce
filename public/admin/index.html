@@ -27,12 +27,12 @@
     .stat__value { font-family: var(--font-sc); font-size: 2.4rem; letter-spacing: 0.02em; line-height: 1; }
     .stat__label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mid); margin-top: 0.6rem; }
     /* Card / Table */
-    .card { border: 1px solid var(--border); overflow: hidden; }
-    .table { width: 100%; border-collapse: collapse; font-family: var(--font-sc); font-size: 0.88rem; }
-    .table th { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mid); padding: 0.85rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface); }
-    .table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    .table tbody tr:last-child td { border-bottom: none; }
-    .table tbody tr:hover { background: var(--surface); }
+    .admin-card { border: 1px solid var(--border); overflow-x: auto; }
+    .admin-table { width: 100%; border-collapse: collapse; font-family: var(--font-sc); font-size: 0.88rem; min-width: 500px; }
+    .admin-table th { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mid); padding: 0.85rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border); background: var(--surface); white-space: nowrap; }
+    .admin-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .admin-table tbody tr:last-child td { border-bottom: none; }
+    .admin-table tbody tr:hover td { background: var(--surface); }
     /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,17,0.45); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 4rem 1rem; overflow-y: auto; }
     .modal { background: var(--bg); border: 1px solid var(--border); width: 100%; max-width: 640px; padding: 2.5rem; position: relative; }
@@ -105,7 +105,7 @@
         <div class="stat"><div class="stat__value" id="s-estoque">—</div><div class="stat__label">Itens em estoque</div></div>
       </div>
       <h3 style="margin-bottom:1rem;font-size:0.9rem;letter-spacing:0.05em">Pedidos recentes</h3>
-      <div class="card"><table class="table" id="dash-orders"><tr><td style="color:var(--ink-mid);padding:1.5rem">Carregando...</td></tr></table></div>
+      <div class="admin-card"><table class="admin-table" id="dash-orders"><tr><td style="color:var(--ink-mid);padding:1.5rem">Carregando...</td></tr></table></div>
     </div>
 
     <!-- Pedidos -->
@@ -125,8 +125,8 @@
           <input class="input" id="filter-search" placeholder="Email ou nome..." style="max-width:220px;padding:0.5rem 0.8rem;font-size:0.8rem">
         </div>
       </div>
-      <div class="card">
-        <table class="table">
+      <div class="admin-card">
+        <table class="admin-table">
           <thead><tr><th>Pedido</th><th>Cliente</th><th>Total</th><th>Status</th><th>Data</th><th></th></tr></thead>
           <tbody id="orders-tbody"><tr><td colspan="6" style="color:var(--ink-mid)">Carregando...</td></tr></tbody>
         </table>
@@ -140,8 +140,8 @@
         <h2>Produtos</h2>
         <button class="btn btn--primary" id="btn-new-product" style="font-size:0.78rem;padding:0.7rem 1.4rem">+ Novo produto</button>
       </div>
-      <div class="card">
-        <table class="table">
+      <div class="admin-card">
+        <table class="admin-table">
           <thead><tr><th>Produto</th><th>Preço</th><th>Status</th><th>Ordem</th><th></th></tr></thead>
           <tbody id="products-tbody"><tr><td colspan="5" style="color:var(--ink-mid)">Carregando...</td></tr></tbody>
         </table>
@@ -151,8 +151,8 @@
     <!-- Estoque -->
     <div class="page" id="page-estoque">
       <h2 style="margin-bottom:2rem">Estoque</h2>
-      <div class="card">
-        <table class="table">
+      <div class="admin-card">
+        <table class="admin-table">
           <thead><tr><th>Produto</th><th>Tamanho</th><th>Disponível</th><th>Reservado</th><th>Total</th><th></th></tr></thead>
           <tbody id="stock-tbody"><tr><td colspan="6" style="color:var(--ink-mid)">Carregando...</td></tr></tbody>
         </table>
