@@ -11,11 +11,13 @@ export default async function handler(req, res) {
   const user = await verifyAdmin(req);
   if (!user) { res.status(401).json({ error: 'Não autorizado' }); return; }
 
-  const segs     = Array.isArray(req.query.slug) ? req.query.slug : [req.query.slug].filter(Boolean);
-  const resource = segs[0];        // products | orders | stock
-  const id       = segs[1] || null;
-  const sub      = segs[2] || null; // 'images'
-  const subId    = segs[3] || null; // imageId | 'reorder'
+  // Parse path from URL directly — avoids relying on req.query param naming
+  const { pathname } = new URL(req.url, 'http://localhost');
+  const pathSegs = pathname.replace(/^\/api\/admin\/?/, '').split('/').filter(Boolean);
+  const resource = pathSegs[0];        // products | orders | stock
+  const id       = pathSegs[1] || null;
+  const sub      = pathSegs[2] || null; // 'images'
+  const subId    = pathSegs[3] || null; // imageId | 'reorder'
 
   // ── PRODUCTS ──────────────────────────────────────────────────────────────
   if (resource === 'products') {
