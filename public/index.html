@@ -69,9 +69,8 @@
     <p class="hero__tagline fade-up fade-up--d1" id="hero-tagline">Memória em Tecido</p>
     <div class="hero__rule fade-up fade-up--d2" aria-hidden="true"></div>
     <div class="fade-up fade-up--d3" style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;position:relative;z-index:1">
-      <a href="/produtos" class="btn" id="hero-cta">Ver Produtos</a>
+      <button class="btn" id="hero-cta">Ver Produtos</button>
     </div>
-    <button class="hero__scroll fade-up fade-up--d4" id="hero-scroll" aria-label="Rolar para produtos">↓ &nbsp; scroll</button>
   </section>
 
   <!-- Ticker -->
@@ -184,8 +183,8 @@
       header.classList.toggle('scrolled', scrollY > 40);
     }, { passive: true });
 
-    // ── Scroll button ──
-    document.getElementById('hero-scroll')?.addEventListener('click', () => {
+    // ── Hero CTA → scroll to products ──
+    document.getElementById('hero-cta')?.addEventListener('click', () => {
       document.getElementById('produtos')?.scrollIntoView({ behavior: 'smooth' });
     });
 
@@ -201,7 +200,6 @@
         if (settings.hero) {
           const cta = document.getElementById('hero-cta');
           if (cta && settings.hero.cta_text) cta.textContent = settings.hero.cta_text;
-          if (cta && settings.hero.cta_link) cta.href = settings.hero.cta_link;
           const tagline = document.getElementById('hero-tagline');
           if (tagline && settings.hero.tagline) tagline.textContent = settings.hero.tagline;
         }

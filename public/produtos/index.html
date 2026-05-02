@@ -168,6 +168,7 @@
         esporte:     p.getAll('esporte'),
         subcategoria:p.getAll('subcategoria'),
         tipo:        p.getAll('tipo'),
+        modelagem:   p.getAll('modelagem'),
         tamanho:     p.getAll('tamanho'),
         sort:        p.get('sort') || 'novidades',
         page:        Math.max(1, parseInt(p.get('page') || '1', 10))
@@ -180,6 +181,7 @@
       newState.esporte.forEach(v      => p.append('esporte', v));
       newState.subcategoria.forEach(v => p.append('subcategoria', v));
       newState.tipo.forEach(v         => p.append('tipo', v));
+      newState.modelagem.forEach(v    => p.append('modelagem', v));
       newState.tamanho.forEach(v      => p.append('tamanho', v));
       if (newState.sort !== 'novidades') p.set('sort', newState.sort);
       if (newState.page > 1)   p.set('page', newState.page);
@@ -201,6 +203,7 @@
       if (st.esporte.length)      out = out.filter(p => st.esporte.includes(p.esporte));
       if (st.subcategoria.length) out = out.filter(p => st.subcategoria.includes(p.subcategoria));
       if (st.tipo.length)         out = out.filter(p => st.tipo.includes(p.tipo));
+      if (st.modelagem.length)    out = out.filter(p => st.modelagem.includes(p.modelagem));
       if (st.tamanho.length) {
         out = out.filter(p =>
           p.product_sizes.some(s => st.tamanho.includes(s.size) && s.available > 0)
@@ -239,6 +242,10 @@
         {
           key: 'tipo', label: 'Tipo',
           values: [...new Set(products.map(p => p.tipo).filter(Boolean))].sort()
+        },
+        {
+          key: 'modelagem', label: 'Modelagem',
+          values: [...new Set(products.map(p => p.modelagem).filter(Boolean))].sort()
         }
       ];
 
@@ -319,8 +326,8 @@
     function renderActiveTags(st) {
       const el = document.getElementById('active-filters');
       const tags = [];
-      const LABELS = { esporte: 'Esporte', subcategoria: 'Categoria', tipo: 'Tipo', tamanho: 'Tam.' };
-      ['esporte','subcategoria','tipo','tamanho'].forEach(key => {
+      const LABELS = { esporte: 'Esporte', subcategoria: 'Categoria', tipo: 'Tipo', modelagem: 'Modelagem', tamanho: 'Tam.' };
+      ['esporte','subcategoria','tipo','modelagem','tamanho'].forEach(key => {
         st[key].forEach(v => tags.push({ key, v, label: `${v}` }));
       });
       if (st.q) tags.push({ key: 'q', v: st.q, label: `"${st.q}"` });
@@ -458,7 +465,7 @@
 
     // ── Clear all ──
     document.getElementById('filter-clear-all')?.addEventListener('click', () => {
-      state = { ...state, esporte: [], subcategoria: [], tipo: [], tamanho: [], q: '', page: 1 };
+      state = { ...state, esporte: [], subcategoria: [], tipo: [], modelagem: [], tamanho: [], q: '', page: 1 };
       if (document.getElementById('search-input')) document.getElementById('search-input').value = '';
       pushURL(state);
       render();
