@@ -104,8 +104,8 @@
       </div>
       <div class="admin-card">
         <table class="admin-table">
-          <thead><tr><th>Produto</th><th>Preço</th><th>Status</th><th>Ordem</th><th></th></tr></thead>
-          <tbody id="products-tbody"><tr><td colspan="5" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
+          <thead><tr><th>Produto</th><th>Preço</th><th>Preço original</th><th>Status</th><th>Ordem</th><th></th></tr></thead>
+          <tbody id="products-tbody"><tr><td colspan="6" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
       <div id="products-pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem"></div>
@@ -440,13 +440,19 @@
         <tr>
           <td><div style="font-family:var(--font-sc)">${p.name}</div><div style="color:var(--ink-mid);font-size:0.78rem">${p.slug}</div></td>
           <td style="font-family:var(--font-sc)">R$ ${(p.price/100).toFixed(2).replace('.',',')}</td>
+          <td style="font-family:var(--font-sc)">
+            ${p.compare_at_price
+              ? `<span style="color:var(--ink-mid);text-decoration:line-through">R$ ${(p.compare_at_price/100).toFixed(2).replace('.',',')}</span>
+                 <span style="font-family:var(--font-mono);font-size:0.62rem;background:var(--ink);color:#F4EFE6;padding:0.15rem 0.4rem;margin-left:0.3rem">-${Math.round((1-p.price/p.compare_at_price)*100)}%</span>`
+              : '<span style="color:var(--ink-faint)">—</span>'}
+          </td>
           <td><span class="status status--${p.active?'paid':'cancelled'}">${p.active?'Ativo':'Inativo'}</span></td>
           <td style="color:var(--ink-mid)">${p.display_order}</td>
           <td><div style="display:flex;gap:0.5rem">
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="editProduct('${p.id}')">Editar</button>
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem;color:var(--error)" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Ocultar':'Ativar'}</button>
           </div></td>
-        </tr>`).join('') || '<tr><td colspan="5" style="color:#888;padding:1.5rem">Nenhum produto</td></tr>';
+        </tr>`).join('') || '<tr><td colspan="6" style="color:#888;padding:1.5rem">Nenhum produto</td></tr>';
 
       const pag = document.getElementById('products-pagination');
       pag.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) =>

@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       const page = Math.max(1, parseInt(req.query.page || '1', 10));
       const from = (page - 1) * PAGE_SIZE;
       const { data, error, count } = await supabase.from('products')
-        .select(`id, slug, name, subtitle, price, display_order, active, featured, created_at,
+        .select(`id, slug, name, subtitle, price, compare_at_price, display_order, active, featured, created_at,
           product_images(url, type, display_order), product_sizes(size, stock, reserved)`, { count: 'exact' })
         .is('deleted_at', null)
         .order('display_order', { ascending: true })
