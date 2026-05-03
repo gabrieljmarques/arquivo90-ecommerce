@@ -133,9 +133,21 @@
 
     <!-- Estoque -->
     <div class="page" id="page-estoque">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
         <h2>Estoque</h2>
-        <input class="input" id="stock-search" placeholder="Filtrar por produto..." style="max-width:260px;padding:0.5rem 0.8rem;font-size:0.8rem">
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center">
+        <input class="input" id="stock-search" placeholder="Buscar produto..." style="max-width:220px;padding:0.5rem 0.8rem;font-size:0.8rem">
+        <select class="select" id="sf-alert" style="width:auto;padding:0.5rem 0.8rem;font-size:0.8rem">
+          <option value="">Todos os status</option>
+          <option value="out">Esgotado</option>
+          <option value="low">Estoque baixo (≤ 3)</option>
+          <option value="ok">Normal</option>
+        </select>
+        <select class="select" id="sf-tipo" style="width:auto;padding:0.5rem 0.8rem;font-size:0.8rem">
+          <option value="">Todos os tipos</option>
+        </select>
+        <span id="sf-count" style="font-family:var(--font-mono);font-size:0.68rem;color:var(--ink-faint);margin-left:auto"></span>
       </div>
       <div class="admin-card">
         <table class="admin-table">
@@ -769,6 +781,8 @@
   let stockData       = [];
   let stockSort       = { col: 'name', asc: true };
   let stockSearchVal  = '';
+  let stockAlertVal   = '';
+  let stockTipoVal    = '';
   let stockPage       = 1;
 
   const STOCK_COL_LABELS = { name: 'Produto', avail: 'Disponível', reserved: 'Reservado', stock: 'Total', sold: 'Vendidos' };
@@ -786,6 +800,15 @@
       document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
       stockData = stock;
       stockPage = 1;
+
+      // Populate tipo dropdown dynamically
+      const tipos = [...new Set(stock.map(s => s.products.tipo).filter(Boolean))].sort();
+      const sfTipo = document.getElementById('sf-tipo');
+      if (sfTipo) {
+        sfTipo.innerHTML = '<option value="">Todos os tipos</option>' +
+          tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+      }
+
       renderStock();
     } catch(e) { console.error(e); }
   }
@@ -806,10 +829,24 @@
     renderStock();
   });
 
+  document.getElementById('sf-alert')?.addEventListener('change', e => {
+    stockAlertVal = e.target.value;
+    stockPage = 1;
+    renderStock();
+  });
+
+  document.getElementById('sf-tipo')?.addEventListener('change', e => {
+    stockTipoVal = e.target.value;
+    stockPage = 1;
+    renderStock();
+  });
+
   function renderStock() {
-    const filtered = stockSearchVal
-      ? stockData.filter(s => s.products.name.toLowerCase().includes(stockSearchVal))
-      : stockData;
+    const filtered = stockData.filter(s => {
+      if (stockSearchVal && !s.products.name.toLowerCase().includes(stockSearchVal)) return false;
+      if (stockTipoVal   && s.products.tipo !== stockTipoVal) return false;
+      return true;
+    });
 
     const grouped = {};
     const productOrder = [];
@@ -828,7 +865,22 @@
       grouped[name].totals.sold     += (s.sold || 0);
     });
 
-    productOrder.sort((a, b) => {
+    // Alert filter: operates on grouped totals
+    const visibleByAlert = stockAlertVal
+      ? productOrder.filter(name => {
+          const avail = grouped[name].totals.avail;
+          if (stockAlertVal === 'out') return avail === 0;
+          if (stockAlertVal === 'low') return avail > 0 && avail <= 3;
+          if (stockAlertVal === 'ok')  return avail > 3;
+          return true;
+        })
+      : productOrder;
+
+    // Update counter
+    const sfCount = document.getElementById('sf-count');
+    if (sfCount) sfCount.textContent = visibleByAlert.length ? `${visibleByAlert.length} produto${visibleByAlert.length !== 1 ? 's' : ''}` : '';
+
+    visibleByAlert.sort((a, b) => {
       const ga = grouped[a], gb = grouped[b];
       let va, vb;
       if (stockSort.col === 'name') { va = a.toLowerCase(); vb = b.toLowerCase(); }
@@ -845,11 +897,11 @@
     });
 
     // Pagination
-    const totalProducts = productOrder.length;
+    const totalProducts = visibleByAlert.length;
     const totalPages    = Math.max(1, Math.ceil(totalProducts / STOCK_PAGE_SIZE));
     if (stockPage > totalPages) stockPage = totalPages;
     const pageStart     = (stockPage - 1) * STOCK_PAGE_SIZE;
-    const visibleNames  = productOrder.slice(pageStart, pageStart + STOCK_PAGE_SIZE);
+    const visibleNames  = visibleByAlert.slice(pageStart, pageStart + STOCK_PAGE_SIZE);
 
     const tbody = document.getElementById('stock-tbody');
     const rows = [];

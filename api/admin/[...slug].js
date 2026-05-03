@@ -279,7 +279,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const [sizesResult, ordersResult] = await Promise.all([
         supabase.from('product_sizes')
-          .select('id, size, color, stock, reserved, products!inner(id, name, slug, active, deleted_at)')
+          .select('id, size, color, stock, reserved, products!inner(id, name, slug, tipo, active, deleted_at)')
           .is('products.deleted_at', null).order('size', { ascending: true }),
         supabase.from('orders').select('id').in('status', ['paid','preparing','shipped','delivered'])
       ]);
