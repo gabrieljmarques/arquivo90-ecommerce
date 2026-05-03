@@ -311,7 +311,13 @@
           <p class="info__eyebrow">Arquivo 90</p>
           <h1 class="info__title">${p.name}</h1>
           ${p.subtitle ? `<p class="info__sub">${p.subtitle}</p>` : ''}
-          <p class="info__price">${fmt(p.price)}</p>
+          ${p.compare_at_price > p.price
+            ? `<div class="info__price-wrap">
+                <p class="info__price">${fmt(p.price)}</p>
+                <p class="info__price-original">${fmt(p.compare_at_price)}</p>
+                <span class="info__discount-badge">-${Math.round((1 - p.price / p.compare_at_price) * 100)}%</span>
+               </div>`
+            : `<p class="info__price">${fmt(p.price)}</p>`}
 
           ${sizes.length ? colorSelectorHtml : ''}
 

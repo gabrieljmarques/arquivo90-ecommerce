@@ -494,8 +494,9 @@
           <div id="rte-body" class="rte-body" contenteditable="true" data-initial="${encodeURIComponent(p?.description||'')}"></div>
           <input type="hidden" name="description" id="rte-hidden">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
           <div class="field"><label class="label">Preço * (R$)</label><input class="input" name="price" type="number" step="0.01" value="${p?.price ? (p.price/100).toFixed(2) : ''}" required></div>
+          <div class="field"><label class="label">Preço original riscado (R$)</label><input class="input" name="compare_at_price" type="number" step="0.01" value="${p?.compare_at_price ? (p.compare_at_price/100).toFixed(2) : ''}" placeholder="Deixe em branco sem desconto"></div>
           <div class="field"><label class="label">Peso (gramas)</label><input class="input" name="peso_g" type="number" value="${p?.peso_g||300}" placeholder="300"></div>
         </div>
         <div class="field"><label class="label">Ordem vitrine</label><input class="input" name="display_order" type="number" value="${p?.display_order??99}"></div>
@@ -676,6 +677,7 @@
       subtitle:         f.subtitle.value,
       description:      document.getElementById('rte-hidden')?.value || null,
       price:            Math.round(parseFloat(f.price.value) * 100),
+      compare_at_price: f.compare_at_price.value ? Math.round(parseFloat(f.compare_at_price.value) * 100) : null,
       peso_g:           f.peso_g.value ? parseInt(f.peso_g.value, 10) : null,
       display_order:    parseInt(f.display_order.value, 10),
       tipo:             f.tipo.value || null,

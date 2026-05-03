@@ -302,11 +302,14 @@
                 <span class="product-card__overlay-cta">Ver produto</span>
               </div>
               ${!hasStock ? `<span class="product-card__sold-badge">Esgotado</span>` : ''}
+              ${p.compare_at_price > p.price ? `<span class="product-card__discount-badge">-${Math.round((1 - p.price / p.compare_at_price) * 100)}%</span>` : ''}
             </div>
             <div class="product-card__info">
               <p class="product-card__name">${p.name}</p>
               ${p.subtitle ? `<p class="product-card__sub">${p.subtitle}</p>` : ''}
-              <p class="product-card__price">${fmt(p.price)}</p>
+              ${p.compare_at_price > p.price
+                ? `<div class="product-card__price-wrap"><p class="product-card__price">${fmt(p.price)}</p><p class="product-card__price-original">${fmt(p.compare_at_price)}</p></div>`
+                : `<p class="product-card__price">${fmt(p.price)}</p>`}
               <div class="product-card__sizes">
                 ${sizes.map(s => `<span class="size-dot${s.available === 0 ? ' out' : ''}">${s.size}</span>`).join('')}
               </div>

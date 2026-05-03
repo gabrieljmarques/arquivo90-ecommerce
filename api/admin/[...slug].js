@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
     // POST /admin/products  (create)
     if (req.method === 'POST' && !id && !sub) {
-      const { name, slug, subtitle, description, price, display_order,
+      const { name, slug, subtitle, description, price, compare_at_price, display_order,
               tipo, modelagem, genero, esporte, subcategoria, cor,
               sku, peso_g, time_ref, ano_ref, tags,
               meta_title, meta_description, image_url, active, featured, colors } = req.body || {};
@@ -51,7 +51,9 @@ export default async function handler(req, res) {
       const { data, error } = await supabase.from('products').insert({
         name: name.trim(), slug: cleanSlug, sku: sku?.trim() || null,
         subtitle: subtitle?.trim() || null, description: description?.trim() || null,
-        price: parseFloat(price), display_order: display_order ?? 99,
+        price: parseFloat(price),
+        compare_at_price: compare_at_price ? parseInt(compare_at_price, 10) : null,
+        display_order: display_order ?? 99,
         peso_g: peso_g ? parseInt(peso_g, 10) : null,
         tipo: tipo || null, modelagem: modelagem || null, genero: genero || null,
         esporte: esporte || null, subcategoria: subcategoria || null, cor: cor?.trim() || null,
@@ -99,10 +101,11 @@ export default async function handler(req, res) {
       const { data: before } = await supabase.from('products').select('*').eq('id', id).single();
       if (!before) { res.status(404).json({ error: 'Produto não encontrado' }); return; }
 
-      const allowed = ['name','slug','sku','subtitle','description','price','display_order','peso_g','tipo','modelagem','genero','esporte','subcategoria','cor','time_ref','ano_ref','tags','meta_title','meta_description','image_url','active','featured'];
+      const allowed = ['name','slug','sku','subtitle','description','price','compare_at_price','display_order','peso_g','tipo','modelagem','genero','esporte','subcategoria','cor','time_ref','ano_ref','tags','meta_title','meta_description','image_url','active','featured'];
       const updates = Object.fromEntries(Object.entries(req.body || {}).filter(([k]) => allowed.includes(k)));
       if (updates.slug)  updates.slug  = updates.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
       if (updates.price) updates.price = parseFloat(updates.price);
+      if ('compare_at_price' in updates) updates.compare_at_price = updates.compare_at_price ? parseInt(updates.compare_at_price, 10) : null;
 
       if (!Object.keys(updates).length) { res.status(400).json({ error: 'Nenhum campo para atualizar' }); return; }
 

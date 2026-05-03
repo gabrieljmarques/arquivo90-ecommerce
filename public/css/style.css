@@ -251,6 +251,15 @@ a  { color: inherit; text-decoration: none; }
   color: rgba(244,239,230,0.75); border: 1px solid rgba(244,239,230,0.35);
   padding: 0.25rem 0.7rem; background: rgba(17,17,17,0.3);
 }
+.product-card__discount-badge {
+  position: absolute; top: 1rem; right: 1rem;
+  font-family: var(--font-mono); font-size: 0.58rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #F4EFE6; background: var(--ink);
+  padding: 0.25rem 0.6rem;
+}
+.product-card__price-wrap { display: flex; align-items: baseline; gap: 0.45rem; flex-wrap: wrap; }
+.product-card__price-original { font-family: var(--font-sc); font-size: 0.82rem; color: var(--ink-faint); text-decoration: line-through; }
 .product-card__info { padding: 0.9rem 0 0; }
 .product-card__name {
   font-family: var(--font-sc); font-size: 1.05rem;
@@ -493,6 +502,10 @@ a  { color: inherit; text-decoration: none; }
 .info__title { font-size: clamp(2rem, 3vw, 3rem); font-weight: 700; margin-bottom: 0.5rem; }
 .info__sub { font-size: 0.95rem; font-weight: 500; color: var(--ink-mid); margin-bottom: 1.5rem; font-family: var(--font-mono); letter-spacing: 0.06em; }
 .info__price { font-family: var(--font-sc); font-size: 1.6rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 2rem; }
+.info__price-wrap { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 2rem; }
+.info__price-wrap .info__price { margin-bottom: 0; }
+.info__price-original { font-family: var(--font-sc); font-size: 1.1rem; color: var(--ink-faint); text-decoration: line-through; }
+.info__discount-badge { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: #F4EFE6; background: var(--ink); padding: 0.2rem 0.55rem; align-self: center; }
 .info__section-label { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 0.8rem; }
 .info__specs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; font-size: 0.88rem; color: var(--ink-mid); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; }
 

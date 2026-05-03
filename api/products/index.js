@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from('products')
       .select(`
-        id, slug, name, subtitle, price, featured, display_order,
+        id, slug, name, subtitle, price, compare_at_price, featured, display_order,
         tipo, esporte, subcategoria, cor, genero, time_ref,
         product_images(url, type, display_order),
         product_sizes(size, color, stock, reserved)
