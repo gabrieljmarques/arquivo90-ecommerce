@@ -26,14 +26,28 @@ export default async function handler(req, res) {
 
     // GET /admin/products?page=N  (list, paginated)
     if (req.method === 'GET' && !id) {
-      const page = Math.max(1, parseInt(req.query.page || '1', 10));
-      const from = (page - 1) * PAGE_SIZE;
-      const { data, error, count } = await supabase.from('products')
-        .select(`id, slug, name, subtitle, price, compare_at_price, display_order, active, featured, created_at,
+      const page   = Math.max(1, parseInt(req.query.page || '1', 10));
+      const from   = (page - 1) * PAGE_SIZE;
+      const q      = req.query.q?.trim()    || null;
+      const status = req.query.status       || null;  // 'active' | 'inactive'
+      const tipo   = req.query.tipo         || null;
+      const promo  = req.query.promo === '1';         // only products with discount
+
+      let query = supabase.from('products')
+        .select(`id, slug, name, subtitle, price, compare_at_price, tipo, time_ref, subcategoria,
+          display_order, active, featured, created_at,
           product_images(url, type, display_order), product_sizes(size, stock, reserved)`, { count: 'exact' })
         .is('deleted_at', null)
         .order('display_order', { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
+
+      if (q)      query = query.ilike('name', `%${q}%`);
+      if (status === 'active')   query = query.eq('active', true);
+      if (status === 'inactive') query = query.eq('active', false);
+      if (tipo)   query = query.eq('tipo', tipo);
+      if (promo)  query = query.not('compare_at_price', 'is', null);
+
+      const { data, error, count } = await query;
       if (error) { res.status(500).json({ error: error.message }); return; }
       res.json({ products: data, total: count, page, pages: Math.ceil(count / PAGE_SIZE) }); return;
     }

@@ -98,14 +98,34 @@
 
     <!-- Produtos -->
     <div class="page" id="page-produtos">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;gap:3rem;flex-wrap:wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:2rem;flex-wrap:wrap">
         <h2>Produtos</h2>
         <button class="btn btn--primary" id="btn-new-product" style="font-size:0.78rem;padding:0.7rem 1.4rem;flex-shrink:0">+ Novo produto</button>
       </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center">
+        <input  class="input" id="pf-search" placeholder="Buscar produto..." style="max-width:220px;padding:0.5rem 0.8rem;font-size:0.8rem">
+        <select class="select" id="pf-status" style="width:auto;padding:0.5rem 0.8rem;font-size:0.8rem">
+          <option value="">Todos os status</option>
+          <option value="active">Ativo</option>
+          <option value="inactive">Inativo</option>
+        </select>
+        <select class="select" id="pf-tipo" style="width:auto;padding:0.5rem 0.8rem;font-size:0.8rem">
+          <option value="">Todos os tipos</option>
+          <option value="Camiseta">Camiseta</option>
+          <option value="Moletom">Moletom</option>
+          <option value="Regata">Regata</option>
+          <option value="Polo">Polo</option>
+          <option value="Jaqueta">Jaqueta</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.08em;white-space:nowrap">
+          <input type="checkbox" id="pf-promo"> Em promoção
+        </label>
+        <span id="pf-count" style="font-family:var(--font-mono);font-size:0.68rem;color:var(--ink-faint);margin-left:auto"></span>
+      </div>
       <div class="admin-card">
         <table class="admin-table">
-          <thead><tr><th>Produto</th><th>Preço</th><th>Preço original</th><th>Status</th><th>Ordem</th><th></th></tr></thead>
-          <tbody id="products-tbody"><tr><td colspan="6" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
+          <thead><tr><th>Produto</th><th>Preço</th><th>Tipo</th><th>Time / Momento</th><th>Estoque</th><th>Status</th><th></th></tr></thead>
+          <tbody id="products-tbody"><tr><td colspan="7" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
       <div id="products-pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem"></div>
@@ -433,26 +453,51 @@
 
   async function loadProducts(page = 1) {
     productsPage = page;
+    const q     = document.getElementById('pf-search')?.value.trim() || '';
+    const status = document.getElementById('pf-status')?.value || '';
+    const tipo   = document.getElementById('pf-tipo')?.value   || '';
+    const promo  = document.getElementById('pf-promo')?.checked ? '1' : '';
     try {
-      const { products, pages } = await api(`/admin/products?page=${page}`);
+      const params = new URLSearchParams({ page, ...(q && {q}), ...(status && {status}), ...(tipo && {tipo}), ...(promo && {promo}) });
+      const { products, total, pages } = await api(`/admin/products?${params}`);
+
       const tbody = document.getElementById('products-tbody');
-      tbody.innerHTML = products.map(p => `
-        <tr>
-          <td><div style="font-family:var(--font-sc)">${p.name}</div><div style="color:var(--ink-mid);font-size:0.78rem">${p.slug}</div></td>
-          <td style="font-family:var(--font-sc)">R$ ${(p.price/100).toFixed(2).replace('.',',')}</td>
-          <td style="font-family:var(--font-sc)">
-            ${p.compare_at_price
-              ? `<span style="color:var(--ink-mid);text-decoration:line-through">R$ ${(p.compare_at_price/100).toFixed(2).replace('.',',')}</span>
-                 <span style="font-family:var(--font-mono);font-size:0.62rem;background:var(--ink);color:#F4EFE6;padding:0.15rem 0.4rem;margin-left:0.3rem">-${Math.round((1-p.price/p.compare_at_price)*100)}%</span>`
-              : '<span style="color:var(--ink-faint)">—</span>'}
+      tbody.innerHTML = products.map(p => {
+        const thumb = [...(p.product_images||[])].sort((a,b)=>a.display_order-b.display_order)[0];
+        const avail  = (p.product_sizes||[]).reduce((s,sz) => s + Math.max(0, sz.stock - sz.reserved), 0);
+        const stockLabel = avail === 0
+          ? `<span style="color:var(--error);font-weight:600">Esgotado</span>`
+          : avail <= 3
+          ? `<span style="color:#c07000;font-weight:600">${avail}</span>`
+          : `<span>${avail}</span>`;
+        return `<tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              ${thumb ? `<img src="${thumb.url}" style="width:40px;height:40px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)">` : '<div style="width:40px;height:40px;background:var(--border);flex-shrink:0"></div>'}
+              <div>
+                <div style="font-family:var(--font-sc);font-size:0.9rem">${p.name}</div>
+                <div style="color:var(--ink-faint);font-size:0.72rem;font-family:var(--font-mono)">${p.slug}</div>
+                ${p.featured ? '<span style="font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;background:var(--ink);color:#F4EFE6;padding:0.1rem 0.35rem;margin-top:0.2rem;display:inline-block">DESTAQUE</span>' : ''}
+              </div>
+            </div>
           </td>
+          <td style="white-space:nowrap">
+            <div style="font-family:var(--font-sc)">R$ ${(p.price/100).toFixed(2).replace('.',',')}</div>
+            ${p.compare_at_price ? `<div style="font-family:var(--font-sc);font-size:0.78rem;color:var(--ink-faint);text-decoration:line-through">R$ ${(p.compare_at_price/100).toFixed(2).replace('.',',')}</div><span style="font-family:var(--font-mono);font-size:0.58rem;background:var(--ink);color:#F4EFE6;padding:0.1rem 0.35rem">-${Math.round((1-p.price/p.compare_at_price)*100)}%</span>` : ''}
+          </td>
+          <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--ink-mid)">${p.tipo||'—'}</td>
+          <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--ink-mid);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.time_ref||'—'}</td>
+          <td style="font-family:var(--font-sc);font-size:0.88rem">${stockLabel}</td>
           <td><span class="status status--${p.active?'paid':'cancelled'}">${p.active?'Ativo':'Inativo'}</span></td>
-          <td style="color:var(--ink-mid)">${p.display_order}</td>
           <td><div style="display:flex;gap:0.5rem">
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem" onclick="editProduct('${p.id}')">Editar</button>
             <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem;color:var(--error)" onclick="toggleProduct('${p.id}',${p.active})">${p.active?'Ocultar':'Ativar'}</button>
           </div></td>
-        </tr>`).join('') || '<tr><td colspan="6" style="color:#888;padding:1.5rem">Nenhum produto</td></tr>';
+        </tr>`;
+      }).join('') || '<tr><td colspan="7" style="color:#888;padding:1.5rem">Nenhum produto encontrado</td></tr>';
+
+      const countEl = document.getElementById('pf-count');
+      if (countEl) countEl.textContent = total ? `${total} produto${total!==1?'s':''}` : '';
 
       const pag = document.getElementById('products-pagination');
       pag.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, i) =>
@@ -461,6 +506,11 @@
     } catch(e) { console.error(e); }
   }
   window.loadProducts = loadProducts;
+
+  document.getElementById('pf-search')?.addEventListener('input',  () => loadProducts(1));
+  document.getElementById('pf-status')?.addEventListener('change', () => loadProducts(1));
+  document.getElementById('pf-tipo')?.addEventListener('change',   () => loadProducts(1));
+  document.getElementById('pf-promo')?.addEventListener('change',  () => loadProducts(1));
 
   document.getElementById('btn-new-product').addEventListener('click', () => {
     showModal('Novo produto', productForm(null));
