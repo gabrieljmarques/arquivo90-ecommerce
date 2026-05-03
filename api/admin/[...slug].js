@@ -156,6 +156,42 @@ export default async function handler(req, res) {
       await logAudit(supabase, { adminEmail: user.email, action: 'delete_product_image', entity: 'product_image', entityId: imageId });
       res.json({ ok: true }); return;
     }
+
+    // POST /admin/products?id=UUID&sub=sizes  (add color variant: creates P/M/G/GG rows)
+    if (req.method === 'POST' && id && sub === 'sizes') {
+      const { color } = req.body || {};
+      if (!color?.trim()) { res.status(400).json({ error: 'Cor obrigatória' }); return; }
+      const colorName = color.trim();
+      const DEFAULT_SIZES = ['P','M','G','GG'];
+      const { data: existing } = await supabase.from('product_sizes')
+        .select('size').eq('product_id', id).eq('color', colorName);
+      const existingSizes = (existing || []).map(s => s.size);
+      const toCreate = DEFAULT_SIZES.filter(s => !existingSizes.includes(s));
+      if (toCreate.length === 0) { res.status(409).json({ error: 'Cor já existe' }); return; }
+      const { error } = await supabase.from('product_sizes').insert(
+        toCreate.map(size => ({ product_id: id, size, color: colorName, stock: 0 }))
+      );
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      await logAudit(supabase, { adminEmail: user.email, action: 'add_color_variant', entity: 'product', entityId: id, after: { color: colorName } });
+      res.status(201).json({ ok: true }); return;
+    }
+
+    // DELETE /admin/products?id=UUID&sub=sizes&color=COLOR  (remove color variant if no stock)
+    if (req.method === 'DELETE' && id && sub === 'sizes') {
+      const color = req.query.color || null;
+      if (!color) { res.status(400).json({ error: 'Cor obrigatória' }); return; }
+      const { data: sizes } = await supabase.from('product_sizes')
+        .select('id, stock, reserved').eq('product_id', id).eq('color', color);
+      if (!sizes?.length) { res.status(404).json({ error: 'Cor não encontrada' }); return; }
+      const hasStock = sizes.some(s => s.stock > 0 || s.reserved > 0);
+      if (hasStock) { res.status(409).json({ error: 'Não é possível remover: há estoque ou reservas nessa cor' }); return; }
+      const sizeIds = sizes.map(s => s.id);
+      await supabase.from('stock_transactions').delete().in('product_size_id', sizeIds);
+      const { error } = await supabase.from('product_sizes').delete().eq('product_id', id).eq('color', color);
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      await logAudit(supabase, { adminEmail: user.email, action: 'remove_color_variant', entity: 'product', entityId: id, before: { color } });
+      res.json({ ok: true }); return;
+    }
   }
 
   // ── ORDERS ────────────────────────────────────────────────────────────────

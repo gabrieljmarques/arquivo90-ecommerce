@@ -132,6 +132,7 @@
           <tbody id="stock-tbody"><tr><td colspan="8" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
         </table>
       </div>
+      <div id="stock-pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem"></div>
     </div>
 
     <!-- Conteúdo -->
@@ -503,25 +504,20 @@
 
         <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Variantes de cor</p>
         ${(() => {
-          if (p) {
-            const existing = [...new Set((p.product_sizes||[]).map(s => s.color).filter(Boolean))];
-            return `<div class="field">
-              <label class="label">Cores existentes (gerenciadas via Estoque)</label>
-              <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem">
-                ${existing.map(c => `<span class="color-chip">${c}</span>`).join('')}
-                ${existing.length === 0 ? '<span style="color:var(--ink-faint);font-size:0.8rem;font-family:var(--font-mono)">Sem variações de cor</span>' : ''}
-              </div>
-              <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-faint);margin-top:0.4rem;display:block">Para adicionar novas cores acesse a aba Estoque.</span>
-            </div>`;
-          }
           const PRESET = ['Preto','Branco','Off-White','Marrom','Cinza','Azul','Vermelho','Verde'];
+          const existing = p ? [...new Set((p.product_sizes||[]).map(s => s.color).filter(Boolean))] : [];
           return `<div class="field">
-            <label class="label">Cores (cria variantes P/M/G/GG por cor selecionada)</label>
+            <label class="label">${p ? 'Cores ativas — marque para adicionar novas' : 'Cores (cria variantes P/M/G/GG por cor)'}</label>
             <div class="color-checkboxes" style="margin-top:0.25rem">
-              ${PRESET.map(c => `<label class="color-check-label"><input type="checkbox" data-color="${c}"> ${c}</label>`).join('')}
+              ${PRESET.map(c => {
+                const isExisting = existing.includes(c);
+                return `<label class="color-check-label" style="${isExisting ? 'opacity:0.55' : ''}">
+                  <input type="checkbox" data-color="${c}" ${isExisting ? 'checked data-existing="true"' : ''}> ${c}${isExisting ? ' ✓' : ''}
+                </label>`;
+              }).join('')}
             </div>
-            <input class="input" id="custom-color" style="margin-top:0.5rem" placeholder="Outra cor personalizada (opcional)">
-            <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-mid);margin-top:0.3rem;display:block">Deixe sem seleção para produto sem variação de cor.</span>
+            <input class="input" id="custom-color" style="margin-top:0.5rem" placeholder="${p ? 'Nova cor personalizada' : 'Outra cor personalizada (opcional)'}">
+            <span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--ink-faint);margin-top:0.3rem;display:block">${p ? '✓ = já existe. Marque novas para adicionar. Para remover uma cor, use a aba Estoque.' : 'Deixe sem seleção para produto sem variação de cor.'}</span>
           </div>`;
         })()}
 
@@ -532,7 +528,6 @@
           <div class="field"><label class="label">Gênero</label>${sel('genero',['Unissex','Masculino','Feminino'],p?.genero)}</div>
           <div class="field"><label class="label">Esporte</label>${sel('esporte',['Futebol','Basquete','Fórmula 1','Tênis','Outros'],p?.esporte)}</div>
           <div class="field"><label class="label">Subcategoria</label>${sel('subcategoria',['Times Nacionais','Times Internacionais','Seleções','Outros'],p?.subcategoria)}</div>
-          <div class="field"><label class="label">Cor</label><input class="input" name="cor" value="${p?.cor||''}" placeholder="Branco, Preto, Off-white…"></div>
         </div>
 
         <p class="label" style="margin-top:0.5rem;letter-spacing:0.12em">Referência histórica</p>
@@ -662,12 +657,13 @@
       if (h) h.value = rteBody.innerHTML.trim();
     }
 
-    // Collect colors from checkboxes (create mode only)
-    const colorBoxes = [...f.querySelectorAll('[data-color]')].filter(cb => cb.checked);
-    const customClr  = f.querySelector('#custom-color')?.value?.trim();
-    const colorArr   = colorBoxes.map(cb => cb.dataset.color);
-    if (customClr) colorArr.push(customClr);
-    const colors = colorArr.length > 0 ? colorArr : null;
+    // Colors: differentiate new (unchecked before) vs existing (data-existing)
+    const allColorBoxes = [...f.querySelectorAll('[data-color]')].filter(cb => cb.checked);
+    const customClr     = f.querySelector('#custom-color')?.value?.trim();
+    const newColorBoxes = id ? allColorBoxes.filter(cb => !cb.dataset.existing) : allColorBoxes;
+    const newColorArr   = newColorBoxes.map(cb => cb.dataset.color);
+    if (customClr) newColorArr.push(customClr);
+    const colors = !id && newColorArr.length > 0 ? newColorArr : null;
 
     const tagsRaw = f.tags.value.trim();
     const body = {
@@ -685,7 +681,6 @@
       genero:           f.genero.value || null,
       esporte:          f.esporte.value || null,
       subcategoria:     f.subcategoria.value || null,
-      cor:              f.cor.value || null,
       time_ref:         f.time_ref.value || null,
       ano_ref:          f.ano_ref.value ? parseInt(f.ano_ref.value, 10) : null,
       tags:             tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : null,
@@ -693,11 +688,16 @@
       meta_description: f.meta_description.value || null,
       active:           f.active.checked,
       featured:         f.featured.checked,
-      colors            // only used on create; PUT handler ignores unknown fields
+      colors
     };
     try {
       if (id) {
         await api(`/admin/products?id=${id}`, { method: 'PUT', body: JSON.stringify(body) });
+        for (const color of newColorArr) {
+          try {
+            await api(`/admin/products?id=${id}&sub=sizes`, { method: 'POST', body: JSON.stringify({ color }) });
+          } catch(ce) { if (!ce.message.includes('já existe')) console.warn('add color:', ce.message); }
+        }
       } else {
         await api('/admin/products', { method: 'POST', body: JSON.stringify(body) });
       }
@@ -708,10 +708,12 @@
 
   // ── ESTOQUE ───────────────────────────────────────────────────────────────
   const SIZE_ORDER = ['PP','P','M','G','GG','XG','XGG','XL','XXL'];
+  const STOCK_PAGE_SIZE = 15; // products per page
 
   let stockData       = [];
   let stockSort       = { col: 'name', asc: true };
   let stockSearchVal  = '';
+  let stockPage       = 1;
 
   const STOCK_COL_LABELS = { name: 'Produto', avail: 'Disponível', reserved: 'Reservado', stock: 'Total', sold: 'Vendidos' };
 
@@ -727,6 +729,7 @@
       const { stock } = await api('/admin/stock');
       document.getElementById('s-estoque').textContent = stock.reduce((s,i) => s + Math.max(0, i.stock - i.reserved), 0);
       stockData = stock;
+      stockPage = 1;
       renderStock();
     } catch(e) { console.error(e); }
   }
@@ -734,12 +737,16 @@
   window.sortStock = (col) => {
     if (stockSort.col === col) stockSort.asc = !stockSort.asc;
     else { stockSort.col = col; stockSort.asc = true; }
+    stockPage = 1;
     updateSortHeaders();
     renderStock();
   };
 
+  window.setStockPage = (page) => { stockPage = page; renderStock(); };
+
   document.getElementById('stock-search').addEventListener('input', e => {
     stockSearchVal = e.target.value.toLowerCase().trim();
+    stockPage = 1;
     renderStock();
   });
 
@@ -753,7 +760,7 @@
     filtered.forEach(s => {
       const name = s.products.name;
       if (!grouped[name]) {
-        grouped[name] = { colors: {}, colorOrder: [], totals: { avail: 0, reserved: 0, stock: 0, sold: 0 } };
+        grouped[name] = { id: s.products.id, colors: {}, colorOrder: [], totals: { avail: 0, reserved: 0, stock: 0, sold: 0 } };
         productOrder.push(name);
       }
       const colorKey = s.color || '_';
@@ -781,25 +788,42 @@
       g.totalCount = Object.values(g.colors).reduce((s, arr) => s + arr.length, 0);
     });
 
+    // Pagination
+    const totalProducts = productOrder.length;
+    const totalPages    = Math.max(1, Math.ceil(totalProducts / STOCK_PAGE_SIZE));
+    if (stockPage > totalPages) stockPage = totalPages;
+    const pageStart     = (stockPage - 1) * STOCK_PAGE_SIZE;
+    const visibleNames  = productOrder.slice(pageStart, pageStart + STOCK_PAGE_SIZE);
+
     const tbody = document.getElementById('stock-tbody');
     const rows = [];
-    productOrder.forEach(name => {
+    visibleNames.forEach(name => {
       const g = grouped[name];
+      const nameEsc   = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const productId = g.id;
       let productCellRendered = false;
       g.colorOrder.forEach(colorKey => {
         const colorSizes = g.colors[colorKey];
         const colorLabel = colorKey === '_' ? null : colorKey;
+        const canRemove  = colorKey !== '_' && colorSizes.every(s => s.stock === 0 && s.reserved === 0);
         colorSizes.forEach((s, ci) => {
           const avail = Math.max(0, s.stock - s.reserved);
           const isLastInColor = ci === colorSizes.length - 1;
           const borderBottom = isLastInColor ? '' : 'border-bottom:1px solid var(--surface);';
-          const nameEsc = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
           rows.push(`<tr>
             ${!productCellRendered
-              ? `<td rowspan="${g.totalCount}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">${name}</td>`
+              ? `<td rowspan="${g.totalCount}" style="font-family:var(--font-sc);font-size:0.88rem;vertical-align:middle;border-right:1px solid var(--border)">
+                  ${name}
+                  <br><button class="btn btn--ghost" style="margin-top:0.4rem;padding:0.2rem 0.5rem;font-size:0.62rem;letter-spacing:0.06em" onclick="openAddColor('${productId}','${nameEsc}')">+ cor</button>
+                </td>`
               : ''}
             ${ci === 0
-              ? `<td rowspan="${colorSizes.length}" style="font-size:0.8rem;vertical-align:middle;border-right:1px solid var(--border);${borderBottom}">${colorLabel ? colorLabel : '<span style="color:var(--ink-faint)">—</span>'}</td>`
+              ? `<td rowspan="${colorSizes.length}" style="font-size:0.8rem;vertical-align:middle;border-right:1px solid var(--border);${borderBottom}">
+                  <div style="display:flex;align-items:center;gap:0.4rem">
+                    ${colorLabel || '<span style="color:var(--ink-faint)">—</span>'}
+                    ${canRemove ? `<button onclick="removeColorVariant('${productId}','${colorKey}','${nameEsc}')" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:1rem;line-height:1;padding:0" title="Remover cor">×</button>` : ''}
+                  </div>
+                </td>`
               : ''}
             <td style="font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;${borderBottom}">${s.size}</td>
             <td style="${borderBottom}${avail===0?'color:var(--ink-faint)':''}">${avail}</td>
@@ -813,6 +837,15 @@
       });
     });
     tbody.innerHTML = rows.join('') || '<tr><td colspan="8" style="color:#888;padding:1.5rem">Nenhum item</td></tr>';
+
+    const pag = document.getElementById('stock-pagination');
+    if (pag) {
+      pag.innerHTML = totalPages > 1
+        ? Array.from({ length: totalPages }, (_, i) =>
+            `<button class="btn ${i+1===stockPage?'btn--primary':'btn--ghost'}" style="padding:0.4rem 0.8rem;font-size:0.75rem" onclick="setStockPage(${i+1})">${i+1}</button>`
+          ).join('')
+        : '';
+    }
   }
 
   window.editStock = (id, name, size, current) => {
@@ -840,6 +873,44 @@
         body: JSON.stringify({ product_size_id: id, new_stock: parseInt(document.getElementById('s-new').value, 10), reason: document.getElementById('s-reason').value })
       });
       closeModal();
+      loadStock();
+    } catch(e) { alert(e.message); }
+  };
+
+  const PRESET_COLORS = ['Preto','Branco','Off-White','Marrom','Cinza','Azul','Vermelho','Verde'];
+
+  window.openAddColor = (productId, productName) => {
+    showModal(`Adicionar cor: ${productName}`, `
+      <div class="field" style="margin-bottom:1rem">
+        <label class="label">Cor</label>
+        <select class="select" id="av-color" onchange="document.getElementById('av-custom-wrap').style.display=this.value==='_custom'?'':'none'">
+          ${PRESET_COLORS.map(c => `<option value="${c}">${c}</option>`).join('')}
+          <option value="_custom">Outra cor...</option>
+        </select>
+      </div>
+      <div class="field" id="av-custom-wrap" style="display:none;margin-bottom:1rem">
+        <label class="label">Nome da cor</label>
+        <input class="input" id="av-custom" placeholder="Ex: Azul Marinho">
+      </div>
+      <p style="font-family:var(--font-mono);font-size:0.65rem;color:var(--ink-mid);margin-bottom:1.5rem">Cria tamanhos P, M, G, GG com estoque 0 para a cor selecionada.</p>
+      <button class="btn btn--primary btn--full" onclick="saveAddColor('${productId}')">Adicionar</button>`);
+  };
+
+  window.saveAddColor = async (productId) => {
+    const sel = document.getElementById('av-color').value;
+    const color = sel === '_custom' ? document.getElementById('av-custom')?.value?.trim() : sel;
+    if (!color) { alert('Informe a cor'); return; }
+    try {
+      await api(`/admin/products?id=${productId}&sub=sizes`, { method: 'POST', body: JSON.stringify({ color }) });
+      closeModal();
+      loadStock();
+    } catch(e) { alert(e.message); }
+  };
+
+  window.removeColorVariant = async (productId, color, productName) => {
+    if (!confirm(`Remover variante "${color}" de "${productName}"?\n\nSó é possível remover cores com estoque 0 e sem reservas.`)) return;
+    try {
+      await api(`/admin/products?id=${productId}&sub=sizes&color=${encodeURIComponent(color)}`, { method: 'DELETE' });
       loadStock();
     } catch(e) { alert(e.message); }
   };
