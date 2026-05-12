@@ -285,6 +285,19 @@
       clearTimeout(shippingDebounce);
       shippingDebounce = setTimeout(async () => {
         if (!cart.length) return;
+
+        // Frete grátis: calcula silenciosamente para obter service_id para a etiqueta ME
+        if (isFreeShipping()) {
+          try {
+            const meItems = cart.map(i => ({ product_id: i.product_id, quantity: i.quantity }));
+            const result  = await calculateShipping({ cep, items: meItems });
+            if (result.options?.length) {
+              selectedShipping = result.options[0]; // mais barato — custo absorvido pelo lojista
+            }
+          } catch { /* falha silenciosa — pedido segue sem service_id */ }
+          return; // não muda UI
+        }
+
         const body    = document.getElementById('shipping-body');
         const section = document.getElementById('shipping-section');
         section.style.display = 'block';
