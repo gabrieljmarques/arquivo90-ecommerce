@@ -154,7 +154,7 @@ export default async function handler(req, res) {
         }] : [])
       ],
       payer: { name: cleanCustomer.name, email: cleanCustomer.email },
-      payment_methods: { installments: 1 },
+      payment_methods: { installments: 3, default_installments: 1 },
       back_urls: {
         success: `${process.env.SITE_URL}/obrigado?order=${orderId}`,
         failure: `${process.env.SITE_URL}/checkout?erro=pagamento`,
