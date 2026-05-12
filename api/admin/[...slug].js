@@ -233,7 +233,7 @@ export default async function handler(req, res) {
     // GET /admin/orders?id=UUID
     if (req.method === 'GET' && id) {
       const { data, error } = await supabase.from('orders')
-        .select(`*, order_items(*, products(name, slug))`).eq('id', id).single();
+        .select(`*, coupon_code, discount_amount, order_items(*, products(name, slug))`).eq('id', id).single();
       if (error || !data) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
       res.json({ order: data }); return;
     }
@@ -336,6 +336,83 @@ export default async function handler(req, res) {
         .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
       if (error) { res.status(500).json({ error: error.message }); return; }
       await logAudit(supabase, { adminEmail: user.email, action: 'update_setting', entity: 'site_settings', entityId: key, after: { value } });
+      res.json({ ok: true }); return;
+    }
+  }
+
+  // ── COUPONS ───────────────────────────────────────────────────────────────
+  if (resource === 'coupons') {
+
+    // GET /admin/coupons  (list all, ordered by created_at desc)
+    if (req.method === 'GET' && !id) {
+      const { data, error } = await supabase.from('coupons')
+        .select('id, code, type, value, min_order, max_uses, uses_count, active, expires_at, created_at')
+        .order('created_at', { ascending: false });
+      if (error) { res.status(500).json({ error: error.message }); return; }
+      res.json({ coupons: data }); return;
+    }
+
+    // POST /admin/coupons  (create)
+    if (req.method === 'POST' && !id) {
+      const { code, type, value, min_order, max_uses, expires_at } = req.body || {};
+
+      if (!code?.trim())                          { res.status(400).json({ error: 'Código obrigatório' }); return; }
+      if (!['percentage','fixed'].includes(type)) { res.status(400).json({ error: 'Tipo inválido' }); return; }
+      if (!value || isNaN(value) || value <= 0)   { res.status(400).json({ error: 'Valor inválido' }); return; }
+      if (type === 'percentage' && (value < 1 || value > 100)) { res.status(400).json({ error: 'Percentual deve ser entre 1 e 100' }); return; }
+
+      const cleanCode = code.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 50);
+      if (!cleanCode) { res.status(400).json({ error: 'Código inválido' }); return; }
+
+      const { data, error } = await supabase.from('coupons').insert({
+        code:       cleanCode,
+        type,
+        value:      parseInt(value, 10),
+        min_order:  min_order ? parseInt(min_order, 10) : 0,
+        max_uses:   max_uses  ? parseInt(max_uses,  10) : null,
+        expires_at: expires_at ? new Date(expires_at).toISOString() : null,
+        active:     true
+      }).select().single();
+
+      if (error) {
+        if (error.code === '23505') { res.status(409).json({ error: 'Código já existe' }); return; }
+        res.status(500).json({ error: error.message }); return;
+      }
+
+      await logAudit(supabase, { adminEmail: user.email, action: 'create_coupon', entity: 'coupon', entityId: data.id, after: data });
+      res.status(201).json({ coupon: data }); return;
+    }
+
+    // PUT /admin/coupons?id=UUID  (toggle active or update)
+    if (req.method === 'PUT' && id) {
+      const body    = req.body || {};
+      const allowed = ['active', 'max_uses', 'expires_at', 'min_order'];
+      const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
+
+      if ('max_uses'   in updates) updates.max_uses   = updates.max_uses   ? parseInt(updates.max_uses,  10) : null;
+      if ('min_order'  in updates) updates.min_order  = updates.min_order  ? parseInt(updates.min_order, 10) : 0;
+      if ('expires_at' in updates) updates.expires_at = updates.expires_at ? new Date(updates.expires_at).toISOString() : null;
+
+      if (!Object.keys(updates).length) { res.status(400).json({ error: 'Nenhum campo para atualizar' }); return; }
+
+      const { data: before } = await supabase.from('coupons').select('*').eq('id', id).single();
+      if (!before) { res.status(404).json({ error: 'Cupom não encontrado' }); return; }
+
+      const { data: after, error } = await supabase.from('coupons').update(updates).eq('id', id).select().single();
+      if (error) { res.status(500).json({ error: error.message }); return; }
+
+      await logAudit(supabase, { adminEmail: user.email, action: 'update_coupon', entity: 'coupon', entityId: id, before, after });
+      res.json({ coupon: after }); return;
+    }
+
+    // DELETE /admin/coupons?id=UUID  (only if unused)
+    if (req.method === 'DELETE' && id) {
+      const { data: coupon } = await supabase.from('coupons').select('id, code, uses_count').eq('id', id).single();
+      if (!coupon) { res.status(404).json({ error: 'Cupom não encontrado' }); return; }
+      if (coupon.uses_count > 0) { res.status(409).json({ error: 'Não é possível excluir um cupom já utilizado. Desative-o.' }); return; }
+
+      await supabase.from('coupons').delete().eq('id', id);
+      await logAudit(supabase, { adminEmail: user.email, action: 'delete_coupon', entity: 'coupon', entityId: id, before: coupon });
       res.json({ ok: true }); return;
     }
   }

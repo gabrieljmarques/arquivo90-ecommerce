@@ -108,6 +108,18 @@
           <div id="shipping-body"></div>
         </div>
 
+        <!-- Cupom de desconto -->
+        <div style="margin-bottom:2rem">
+          <h3 style="margin-bottom:1rem;font-size:1rem;letter-spacing:0.05em">Cupom de desconto</h3>
+          <div style="display:flex;gap:0.75rem">
+            <input class="input" id="coupon-input" type="text" placeholder="CÓDIGO" maxlength="50"
+              style="text-transform:uppercase;flex:1;letter-spacing:0.08em" autocomplete="off" spellcheck="false">
+            <button type="button" class="btn btn--ghost" id="btn-coupon"
+              style="padding:0.75rem 1.2rem;font-size:0.75rem;flex-shrink:0">Aplicar</button>
+          </div>
+          <div id="coupon-feedback" style="margin-top:0.5rem;font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.06em;min-height:1.2em"></div>
+        </div>
+
         <button type="submit" class="btn btn--primary btn--full" id="btn-submit">
           Ir para pagamento
         </button>
@@ -127,7 +139,7 @@
   </div>
 
   <script type="module">
-    import { getCart, clearCart, removeFromCart, calculateShipping, createPayment, fmt, toast, setLoading } from '/js/api.js';
+    import { getCart, clearCart, removeFromCart, calculateShipping, createPayment, validateCoupon, fmt, toast, setLoading } from '/js/api.js';
 
     const FLAT_RATE        = 2500;  // fallback quando ME não configurado
     const FREE_THRESHOLD   = 25000; // R$ 250 — frete grátis acima desse valor
@@ -136,6 +148,7 @@
     let selectedShipping = null; // { id, name, company, price_cents, delivery_time }
     let shippingOptions  = null; // null = não calculado, [] = sem opções
     let isFallback       = false;
+    let appliedCoupon    = null; // { code, type, value, discount_amount }
 
     function subtotal() {
       return cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
@@ -158,9 +171,10 @@
         el.innerHTML = '<p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio. <a href="/" style="color:var(--ink)">Ver produtos</a></p>';
         return;
       }
-      const sub     = subtotal();
-      const freight = shippingCost();
-      const total   = freight !== null ? sub + freight : sub;
+      const sub      = subtotal();
+      const freight  = shippingCost();
+      const discount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+      const total    = freight !== null ? sub + freight - discount : sub - discount;
 
       const freteLabel = freight === null
         ? '<span style="color:var(--ink-faint)">a calcular</span>'
@@ -184,11 +198,15 @@
           <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.5rem">
             <span>Subtotal</span><span>${fmt(sub)}</span>
           </div>
+          ${discount > 0 ? `
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#3a7c52;margin-bottom:0.5rem">
+            <span>Desconto (${appliedCoupon.code})</span><span>− ${fmt(discount)}</span>
+          </div>` : ''}
           <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.8rem">
             <span>Frete</span><span>${freteLabel}</span>
           </div>
           ${freight !== null
-            ? `<div class="summary-total"><span>Total</span><span>${fmt(total)}</span></div>`
+            ? `<div class="summary-total"><span>Total</span><span>${fmt(Math.max(0, total))}</span></div>`
             : `<div class="summary-total" style="opacity:0.4"><span>Total</span><span>—</span></div>`}
         </div>`;
     }
@@ -337,6 +355,59 @@
       if (raw.length === 8) fetchShipping(raw);
     });
 
+    // ── Coupon ────────────────────────────────────────────────────────────────
+    function setCouponFeedback(msg, color = 'var(--ink-mid)') {
+      const el = document.getElementById('coupon-feedback');
+      if (el) { el.textContent = msg; el.style.color = color; }
+    }
+
+    function removeCoupon() {
+      appliedCoupon = null;
+      const input = document.getElementById('coupon-input');
+      if (input) { input.value = ''; input.disabled = false; }
+      const btn = document.getElementById('btn-coupon');
+      if (btn) { btn.textContent = 'Aplicar'; }
+      setCouponFeedback('');
+      renderSummary();
+    }
+
+    async function applyCoupon() {
+      const input = document.getElementById('coupon-input');
+      const btn   = document.getElementById('btn-coupon');
+      const code  = (input?.value || '').trim().toUpperCase();
+
+      if (!code) { setCouponFeedback('Informe o código do cupom'); return; }
+
+      // If a coupon is already applied, act as "Remover"
+      if (appliedCoupon) { removeCoupon(); return; }
+
+      btn.disabled = true; btn.textContent = '...';
+      setCouponFeedback('');
+
+      try {
+        const sub  = subtotal();
+        const data = await validateCoupon({ code, subtotal: sub });
+        appliedCoupon = { ...data.coupon, discount_amount: data.discount_amount };
+        input.disabled = true;
+        btn.disabled   = false;
+        btn.textContent = 'Remover';
+        const label = data.coupon.type === 'percentage'
+          ? `${data.coupon.value}% de desconto`
+          : `R$ ${(data.coupon.value / 100).toFixed(2).replace('.', ',')} de desconto`;
+        setCouponFeedback(`✓ Cupom aplicado — ${label}`, '#3a7c52');
+        renderSummary();
+      } catch (err) {
+        btn.disabled    = false;
+        btn.textContent = 'Aplicar';
+        setCouponFeedback(err.message, 'var(--error)');
+      }
+    }
+
+    document.getElementById('btn-coupon')?.addEventListener('click', applyCoupon);
+    document.getElementById('coupon-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); }
+    });
+
     // ── Submit ────────────────────────────────────────────────────────────────
     document.getElementById('checkout-form').addEventListener('submit', async e => {
       e.preventDefault();
@@ -375,7 +446,8 @@
       try {
         const { init_point } = await createPayment({
           items, customer, shippingAddress,
-          shippingService: selectedShipping
+          shippingService: selectedShipping,
+          couponCode: appliedCoupon?.code || null
         });
         clearCart();
         window.location.href = init_point;

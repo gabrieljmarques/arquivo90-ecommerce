@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const allowed = await rateLimit(`checkout:${ip}`, 5, 600);
   if (!allowed) { res.status(429).json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }); return; }
 
-  const { items, customer, shipping_address, shipping_service, idempotency_key } = req.body || {};
+  const { items, customer, shipping_address, shipping_service, idempotency_key, coupon_code } = req.body || {};
 
   if (!Array.isArray(items) || !items.length) { res.status(400).json({ error: 'Carrinho vazio' }); return; }
   if (!customer?.name?.trim() || !customer?.email) { res.status(400).json({ error: 'Nome e email são obrigatórios' }); return; }
@@ -73,7 +73,30 @@ export default async function handler(req, res) {
     shippingCentavos = shipping_service?.price_cents > 0 ? shipping_service.price_cents : FLAT_RATE;
   }
 
-  const total = subtotal + shippingCentavos;
+  // ── Coupon claim (atomic — prevents double-use race conditions) ─────────
+  let claimedCoupon   = null;
+  let discountAmount  = 0;
+  const cleanCouponCode = coupon_code
+    ? coupon_code.trim().toUpperCase().slice(0, 50).replace(/[^A-Z0-9_-]/g, '')
+    : null;
+
+  if (cleanCouponCode) {
+    const { data: claimed } = await supabase.rpc('claim_coupon', {
+      p_code:            cleanCouponCode,
+      p_order_subtotal:  subtotal
+    });
+    const row = Array.isArray(claimed) ? claimed[0] : claimed;
+    if (!row) {
+      await releaseAll(reserved);
+      res.status(400).json({ error: 'Cupom inválido, expirado ou esgotado' }); return;
+    }
+    claimedCoupon  = row;
+    discountAmount = row.type === 'percentage'
+      ? Math.floor(subtotal * row.value / 100)
+      : Math.min(row.value, subtotal);
+  }
+
+  const total = subtotal + shippingCentavos - discountAmount;
   const orderId  = crypto.randomUUID();
 
   const { error: orderErr } = await supabase.from('orders').insert({
@@ -83,10 +106,17 @@ export default async function handler(req, res) {
     shipping_service_id:   shipping_service?.id   ?? null,
     shipping_service_name: shipping_service?.name ?? null,
     carrier:               shipping_service?.company ?? null,
-    shipping_deadline:     shipping_service?.delivery_time ?? null
+    shipping_deadline:     shipping_service?.delivery_time ?? null,
+    coupon_code:           claimedCoupon?.code    ?? null,
+    discount_amount:       discountAmount
   });
 
-  if (orderErr) { await releaseAll(reserved); console.error('order insert error:', orderErr.message); res.status(500).json({ error: 'Erro ao criar pedido' }); return; }
+  if (orderErr) {
+    await releaseAll(reserved);
+    if (claimedCoupon) await supabase.rpc('release_coupon', { p_code: claimedCoupon.code }).catch(() => {});
+    console.error('order insert error:', orderErr.message);
+    res.status(500).json({ error: 'Erro ao criar pedido' }); return;
+  }
 
   await supabase.from('order_items').insert(items.map(i => ({
     order_id: orderId, product_id: i.product_id, product_name: productMap[i.product_id].name,
@@ -137,6 +167,7 @@ export default async function handler(req, res) {
   } catch (mpErr) {
     console.error('MP preference error:', mpErr.message);
     await releaseAll(reserved);
+    if (claimedCoupon) await supabase.rpc('release_coupon', { p_code: claimedCoupon.code }).catch(() => {});
     await supabase.from('orders').delete().eq('id', orderId);
     res.status(502).json({ error: 'Erro ao iniciar pagamento. Tente novamente.' }); return;
   }

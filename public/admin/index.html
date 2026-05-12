@@ -49,6 +49,7 @@
       <a href="#pedidos"   data-page="pedidos">Pedidos</a>
       <a href="#produtos"  data-page="produtos">Produtos</a>
       <a href="#estoque"   data-page="estoque">Estoque</a>
+      <a href="#cupons"    data-page="cupons">Cupons</a>
       <a href="#conteudo"  data-page="conteudo">Conteúdo</a>
     </nav>
     <div class="sidebar__footer">
@@ -165,6 +166,20 @@
         </table>
       </div>
       <div id="stock-pagination" style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem"></div>
+    </div>
+
+    <!-- Cupons -->
+    <div class="page" id="page-cupons">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+        <h2>Cupons de desconto</h2>
+        <button class="btn btn--primary" id="btn-new-coupon" style="font-size:0.78rem;padding:0.7rem 1.4rem;flex-shrink:0">+ Novo cupom</button>
+      </div>
+      <div class="admin-card">
+        <table class="admin-table">
+          <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Pedido mínimo</th><th>Usos</th><th>Expira em</th><th>Status</th><th></th></tr></thead>
+          <tbody id="coupons-tbody"><tr><td colspan="8" style="color:#888;padding:1.5rem">Carregando...</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Conteúdo -->
@@ -326,6 +341,7 @@
     loadOrders();
     loadProducts();
     loadStock();
+    loadCoupons();
     loadSettings();
   }
 
@@ -415,10 +431,14 @@
 
   window.openOrder = async (id) => {
     const { order } = await api(`/admin/orders?id=${id}`);
+    const couponLine = order.coupon_code
+      ? `<div><span style="color:var(--ink-mid)">Cupom:</span> <span style="font-family:var(--font-mono);font-size:0.85rem">${order.coupon_code}</span> — desconto <strong>R$ ${(order.discount_amount/100).toFixed(2).replace('.',',')}</strong></div>`
+      : '';
     showModal(`Pedido #${id.slice(-8).toUpperCase()}`, `
       <div style="display:grid;gap:0.8rem;margin-bottom:1.5rem;font-size:0.9rem">
         <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
         <div><span style="color:var(--ink-mid)">Total:</span> R$ ${(order.total/100).toFixed(2).replace('.',',')}</div>
+        ${couponLine}
         <div><span style="color:var(--ink-mid)">Endereço:</span> ${order.shipping_address?.rua}, ${order.shipping_address?.numero} — ${order.shipping_address?.cidade}/${order.shipping_address?.estado}</div>
         <div><span style="color:var(--ink-mid)">Itens:</span> ${(order.order_items||[]).map(i=>`${i.product_name} ${i.size}${i.color ? ' / '+i.color : ''} x${i.quantity}`).join(', ')}</div>
       </div>
@@ -1020,6 +1040,129 @@
     try {
       await api(`/admin/products?id=${productId}&sub=sizes&color=${encodeURIComponent(color)}`, { method: 'DELETE' });
       loadStock();
+    } catch(e) { alert(e.message); }
+  };
+
+  // ── CUPONS ────────────────────────────────────────────────────────────────
+  async function loadCoupons() {
+    try {
+      const { coupons } = await api('/admin/coupons');
+      const tbody = document.getElementById('coupons-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = coupons.map(c => {
+        const valueLabel = c.type === 'percentage'
+          ? `${c.value}%`
+          : `R$ ${(c.value/100).toFixed(2).replace('.',',')}`;
+        const minLabel = c.min_order > 0
+          ? `R$ ${(c.min_order/100).toFixed(2).replace('.',',')}`
+          : '—';
+        const usesLabel = c.max_uses !== null
+          ? `${c.uses_count} / ${c.max_uses}`
+          : `${c.uses_count} / ∞`;
+        const expiresLabel = c.expires_at
+          ? new Date(c.expires_at).toLocaleDateString('pt-BR')
+          : '—';
+        return `<tr>
+          <td style="font-family:var(--font-mono);letter-spacing:0.1em;font-size:0.85rem">${c.code}</td>
+          <td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--ink-mid)">${c.type === 'percentage' ? 'Percentual' : 'Valor fixo'}</td>
+          <td style="font-family:var(--font-sc)">${valueLabel}</td>
+          <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--ink-mid)">${minLabel}</td>
+          <td style="font-family:var(--font-mono);font-size:0.78rem">${usesLabel}</td>
+          <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--ink-mid)">${expiresLabel}</td>
+          <td><span class="status status--${c.active ? 'paid' : 'cancelled'}">${c.active ? 'Ativo' : 'Inativo'}</span></td>
+          <td>
+            <div style="display:flex;gap:0.4rem">
+              <button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem"
+                onclick="toggleCoupon('${c.id}',${c.active})">${c.active ? 'Desativar' : 'Ativar'}</button>
+              ${c.uses_count === 0
+                ? `<button class="btn btn--ghost" style="padding:0.3rem 0.7rem;font-size:0.7rem;color:var(--error)"
+                    onclick="deleteCoupon('${c.id}','${c.code}')">Excluir</button>`
+                : ''}
+            </div>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8" style="color:#888;padding:1.5rem">Nenhum cupom cadastrado</td></tr>';
+    } catch(e) { console.error('loadCoupons', e); }
+  }
+
+  window.toggleCoupon = async (id, active) => {
+    try {
+      await api(`/admin/coupons?id=${id}`, { method: 'PUT', body: JSON.stringify({ active: !active }) });
+      loadCoupons();
+    } catch(e) { alert(e.message); }
+  };
+
+  window.deleteCoupon = async (id, code) => {
+    if (!confirm(`Excluir o cupom "${code}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await api(`/admin/coupons?id=${id}`, { method: 'DELETE' });
+      loadCoupons();
+    } catch(e) { alert(e.message); }
+  };
+
+  document.getElementById('btn-new-coupon')?.addEventListener('click', () => {
+    showModal('Novo cupom', `
+      <div style="display:grid;gap:1rem">
+        <div class="field">
+          <label class="label">Código *</label>
+          <input class="input" id="cp-code" type="text" placeholder="SAVE10" maxlength="50"
+            style="text-transform:uppercase;letter-spacing:0.1em;font-family:var(--font-mono)"
+            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9_-]/g,'')">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="field">
+            <label class="label">Tipo *</label>
+            <select class="select" id="cp-type" onchange="document.getElementById('cp-value-label').textContent=this.value==='percentage'?'Desconto (%)':'Desconto (R$)'">
+              <option value="percentage">Percentual (%)</option>
+              <option value="fixed">Valor fixo (R$)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label" id="cp-value-label">Desconto (%) *</label>
+            <input class="input" id="cp-value" type="number" min="1" step="1" placeholder="10">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="field">
+            <label class="label">Pedido mínimo (R$)</label>
+            <input class="input" id="cp-min" type="number" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label class="label">Limite de usos</label>
+            <input class="input" id="cp-max" type="number" min="1" step="1" placeholder="Sem limite">
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Data de expiração</label>
+          <input class="input" id="cp-expires" type="datetime-local">
+        </div>
+        <button class="btn btn--primary" onclick="saveCoupon()">Criar cupom</button>
+      </div>`);
+  });
+
+  window.saveCoupon = async () => {
+    const code     = document.getElementById('cp-code')?.value?.trim().toUpperCase();
+    const type     = document.getElementById('cp-type')?.value;
+    const valueRaw = parseFloat(document.getElementById('cp-value')?.value);
+    const minRaw   = parseFloat(document.getElementById('cp-min')?.value   || '0');
+    const maxRaw   = parseInt(document.getElementById('cp-max')?.value     || '0', 10);
+    const expires  = document.getElementById('cp-expires')?.value;
+
+    if (!code)           { alert('Código obrigatório'); return; }
+    if (isNaN(valueRaw)) { alert('Valor obrigatório'); return; }
+
+    const value    = type === 'percentage' ? Math.round(valueRaw) : Math.round(valueRaw * 100);
+    const minOrder = Math.round(minRaw * 100);
+
+    try {
+      await api('/admin/coupons', { method: 'POST', body: JSON.stringify({
+        code, type, value,
+        min_order:  minOrder || 0,
+        max_uses:   maxRaw > 0 ? maxRaw : null,
+        expires_at: expires ? new Date(expires).toISOString() : null
+      })});
+      closeModal();
+      loadCoupons();
     } catch(e) { alert(e.message); }
   };
 

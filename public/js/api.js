@@ -25,7 +25,18 @@ export async function calculateShipping({ cep, items }) {
   return data; // { options: [...] | null, fallback: bool }
 }
 
-export async function createPayment({ items, customer, shippingAddress, shippingService }) {
+export async function validateCoupon({ code, subtotal }) {
+  const r = await fetch(`${BASE}/coupons/validate`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ code, subtotal })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Cupom inválido');
+  return data; // { valid, coupon, discount_amount }
+}
+
+export async function createPayment({ items, customer, shippingAddress, shippingService, couponCode }) {
   const idempotency_key = crypto.randomUUID();
   const r = await fetch(`${BASE}/payment/create`, {
     method:  'POST',
@@ -34,6 +45,7 @@ export async function createPayment({ items, customer, shippingAddress, shipping
       items, customer,
       shipping_address: shippingAddress,
       shipping_service:  shippingService || null,
+      coupon_code:       couponCode      || null,
       idempotency_key
     })
   });
