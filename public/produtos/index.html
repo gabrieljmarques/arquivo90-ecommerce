@@ -10,7 +10,22 @@
 </head>
 <body>
 
-  <div class="announcement-bar" id="announcement-bar">Entrega para todo o Brasil &nbsp;·&nbsp; Algodão 210g &nbsp;·&nbsp; DTF 300dpi</div>
+  <div class="announcement-bar" id="announcement-bar">
+    <div class="ann-inner" id="ann-inner">
+      <span class="ann-item">Entrega para todo o Brasil</span>
+      <span class="ann-item">·</span>
+      <span class="ann-item">Algodão 210g</span>
+      <span class="ann-item">·</span>
+      <span class="ann-item">DTF 300dpi</span>
+      <span class="ann-item">·</span>
+      <span class="ann-item">Entrega para todo o Brasil</span>
+      <span class="ann-item">·</span>
+      <span class="ann-item">Algodão 210g</span>
+      <span class="ann-item">·</span>
+      <span class="ann-item">DTF 300dpi</span>
+      <span class="ann-item">·</span>
+    </div>
+  </div>
 
   <header class="header" id="header">
     <div class="header__main">
@@ -36,28 +51,28 @@
     </div>
     <nav class="header__nav" id="main-nav">
       <a href="/">Início</a>
-      <div class="nav-dropdown-wrap" id="nav-produtos" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-produtos">
         <button class="nav-dropdown-trigger">
           Produtos
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-produtos-menu"></div>
       </div>
-      <div class="nav-dropdown-wrap" id="nav-esportes" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-esportes">
         <button class="nav-dropdown-trigger">
           Esportes
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-esportes-menu"></div>
       </div>
-      <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-categorias">
         <button class="nav-dropdown-trigger">
           Categorias
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-categorias-menu"></div>
       </div>
-      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-times">
         <button class="nav-dropdown-trigger">
           Times
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
@@ -175,6 +190,23 @@
     <div class="footer__bottom">
       <div class="container footer__bottom-inner">
         <p class="footer__sub">© 2026 &mdash; São Paulo, BR</p>
+        <div class="footer__trust">
+          <div class="footer__ssl" title="Conexão segura via HTTPS/SSL">
+            <svg width="11" height="13" viewBox="0 0 11 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="5.5" width="9" height="7" rx="1.5"/>
+              <path d="M3 5.5V3.5a2.5 2.5 0 015 0v2"/>
+            </svg>
+            Site Seguro · SSL
+          </div>
+          <div class="footer__payments">
+            <span class="pay-badge pay-badge--visa">VISA</span>
+            <span class="pay-badge pay-badge--mc">MC</span>
+            <span class="pay-badge pay-badge--elo">ELO</span>
+            <span class="pay-badge pay-badge--pix">PIX</span>
+            <span class="pay-badge pay-badge--amex">AMEX</span>
+            <span class="pay-badge pay-badge--hiper">HIPER</span>
+          </div>
+        </div>
         <a href="/admin" class="footer__sub" style="opacity:0.4">Admin</a>
       </div>
     </div>
@@ -197,7 +229,13 @@
     // ── Load announcement ──
     fetch('/api/site-settings').then(r => r.json()).then(({ settings }) => {
       if (settings?.announcement?.text) {
-        document.getElementById('announcement-bar').textContent = settings.announcement.text;
+        const annInner = document.getElementById('ann-inner');
+        if (annInner) {
+          const parts = settings.announcement.text.split(/\s*·\s*/).filter(Boolean);
+          const items = parts.flatMap(p => [p, '·']);
+          const doubled = [...items, ...items];
+          annInner.innerHTML = doubled.map(t => `<span class="ann-item">${t}</span>`).join('');
+        }
       }
     }).catch(() => {});
 
@@ -435,7 +473,7 @@
               <p class="product-card__name">${p.name}</p>
               ${p.subtitle ? `<p class="product-card__sub">${p.subtitle}</p>` : ''}
               ${p.compare_at_price > p.price
-                ? `<div class="product-card__price-wrap"><p class="product-card__price">${fmt(p.price)}</p><p class="product-card__price-original">${fmt(p.compare_at_price)}</p></div>`
+                ? `<div class="product-card__price-wrap"><p class="product-card__price-original">${fmt(p.compare_at_price)}</p><p class="product-card__price">${fmt(p.price)}</p></div>`
                 : `<p class="product-card__price">${fmt(p.price)}</p>`}
               <div class="product-card__sizes">
                 ${sizes.map(s => `<span class="size-dot${s.available === 0 ? ' out' : ''}">${s.size}</span>`).join('')}

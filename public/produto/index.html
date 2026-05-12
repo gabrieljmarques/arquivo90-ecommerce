@@ -34,28 +34,28 @@
     </div>
     <nav class="header__nav" id="main-nav">
       <a href="/">Início</a>
-      <div class="nav-dropdown-wrap" id="nav-produtos" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-produtos">
         <button class="nav-dropdown-trigger">
           Produtos
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-produtos-menu"></div>
       </div>
-      <div class="nav-dropdown-wrap" id="nav-esportes" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-esportes">
         <button class="nav-dropdown-trigger">
           Esportes
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-esportes-menu"></div>
       </div>
-      <div class="nav-dropdown-wrap" id="nav-categorias" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-categorias">
         <button class="nav-dropdown-trigger">
           Categorias
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
         </button>
         <div class="nav-dropdown-menu" id="nav-categorias-menu"></div>
       </div>
-      <div class="nav-dropdown-wrap" id="nav-times" style="display:none">
+      <div class="nav-dropdown-wrap" id="nav-times">
         <button class="nav-dropdown-trigger">
           Times
           <svg width="9" height="5" viewBox="0 0 9 5" fill="none"><path stroke="currentColor" stroke-width="1.2" d="M1 1l3.5 3L8 1"/></svg>
@@ -113,6 +113,23 @@
     <div class="footer__bottom">
       <div class="container footer__bottom-inner">
         <p class="footer__sub">© 2026 &mdash; São Paulo, BR</p>
+        <div class="footer__trust">
+          <div class="footer__ssl" title="Conexão segura via HTTPS/SSL">
+            <svg width="11" height="13" viewBox="0 0 11 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="5.5" width="9" height="7" rx="1.5"/>
+              <path d="M3 5.5V3.5a2.5 2.5 0 015 0v2"/>
+            </svg>
+            Site Seguro · SSL
+          </div>
+          <div class="footer__payments">
+            <span class="pay-badge pay-badge--visa">VISA</span>
+            <span class="pay-badge pay-badge--mc">MC</span>
+            <span class="pay-badge pay-badge--elo">ELO</span>
+            <span class="pay-badge pay-badge--pix">PIX</span>
+            <span class="pay-badge pay-badge--amex">AMEX</span>
+            <span class="pay-badge pay-badge--hiper">HIPER</span>
+          </div>
+        </div>
         <a href="/admin" class="footer__sub" style="opacity:0.4">Admin</a>
       </div>
     </div>
@@ -313,8 +330,8 @@
           ${p.subtitle ? `<p class="info__sub">${p.subtitle}</p>` : ''}
           ${p.compare_at_price > p.price
             ? `<div class="info__price-wrap">
-                <p class="info__price">${fmt(p.price)}</p>
                 <p class="info__price-original">${fmt(p.compare_at_price)}</p>
+                <p class="info__price">${fmt(p.price)}</p>
                 <span class="info__discount-badge">-${Math.round((1 - p.price / p.compare_at_price) * 100)}%</span>
                </div>`
             : `<p class="info__price">${fmt(p.price)}</p>`}
