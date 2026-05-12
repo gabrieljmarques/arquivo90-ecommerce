@@ -14,12 +14,28 @@ export async function fetchProduct(slug) {
   return r.json();
 }
 
-export async function createPayment({ items, customer, shippingAddress }) {
+export async function calculateShipping({ cep, items }) {
+  const r = await fetch(`${BASE}/shipping/calculate`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ cep, items })
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Erro ao calcular frete');
+  return data; // { options: [...] | null, fallback: bool }
+}
+
+export async function createPayment({ items, customer, shippingAddress, shippingService }) {
   const idempotency_key = crypto.randomUUID();
   const r = await fetch(`${BASE}/payment/create`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ items, customer, shipping_address: shippingAddress, idempotency_key })
+    body:    JSON.stringify({
+      items, customer,
+      shipping_address: shippingAddress,
+      shipping_service:  shippingService || null,
+      idempotency_key
+    })
   });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Erro ao processar pagamento');

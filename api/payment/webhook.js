@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
-import { supabase } from '../utils/supabase.js';
+import { supabase }       from '../utils/supabase.js';
+import { addToMECart }    from '../shipping/me-cart.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
@@ -66,10 +67,36 @@ async function processEvent(event) {
       status: 'paid', mp_payment_id: String(paymentId), paid_at: new Date().toISOString()
     }).eq('id', orderId).eq('status', 'pending');
 
-    const { data: items } = await supabase.from('order_items').select('product_id, size, quantity').eq('order_id', orderId);
-    for (const item of items ?? []) {
-      const { data: ps } = await supabase.from('product_sizes').select('id').eq('product_id', item.product_id).eq('size', item.size).maybeSingle();
-      if (ps) await supabase.from('stock_transactions').insert({ product_size_id: ps.id, delta: -item.quantity, reason: 'sale', order_id: orderId, created_by: 'system' });
+    // Fetch order + items + products for ME cart
+    const { data: order } = await supabase.from('orders')
+      .select('*, order_items(product_id, product_name, size, color, quantity, unit_price)')
+      .eq('id', orderId).single();
+
+    const orderItems = order?.order_items ?? [];
+
+    // Stock transactions
+    for (const item of orderItems) {
+      const { data: ps } = await supabase.from('product_sizes').select('id')
+        .eq('product_id', item.product_id).eq('size', item.size).maybeSingle();
+      if (ps) await supabase.from('stock_transactions').insert({
+        product_size_id: ps.id, delta: -item.quantity, reason: 'sale', order_id: orderId, created_by: 'system'
+      });
+    }
+
+    // Add to Melhor Envio cart (non-blocking — order is already confirmed)
+    if (order?.shipping_service_id) {
+      const productIds = [...new Set(orderItems.map(i => i.product_id))];
+      const { data: products } = await supabase.from('products')
+        .select('id, peso_g').in('id', productIds);
+      const productMap = Object.fromEntries((products || []).map(p => [p.id, p]));
+
+      const meOrderId = await addToMECart({ order, orderItems, productMap }).catch(err => {
+        console.error('addToMECart failed:', err.message); return null;
+      });
+
+      if (meOrderId) {
+        await supabase.from('orders').update({ me_order_id: meOrderId }).eq('id', orderId);
+      }
     }
   } else if (['rejected', 'cancelled'].includes(payment.status)) {
     await supabase.rpc('release_stock_for_order', { p_order_id: orderId });

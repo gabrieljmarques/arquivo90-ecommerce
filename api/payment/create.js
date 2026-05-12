@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const allowed = await rateLimit(`checkout:${ip}`, 5, 600);
   if (!allowed) { res.status(429).json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }); return; }
 
-  const { items, customer, shipping_address, idempotency_key } = req.body || {};
+  const { items, customer, shipping_address, shipping_service, idempotency_key } = req.body || {};
 
   if (!Array.isArray(items) || !items.length) { res.status(400).json({ error: 'Carrinho vazio' }); return; }
   if (!customer?.name?.trim() || !customer?.email) { res.status(400).json({ error: 'Nome e email são obrigatórios' }); return; }
@@ -60,15 +60,21 @@ export default async function handler(req, res) {
     reserved.push({ p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null });
   }
 
-  const SHIPPING_CENTAVOS = 2500;
+  // Use ME shipping if provided, otherwise flat-rate R$ 25
+  const FLAT_RATE          = 2500;
+  const shippingCentavos   = shipping_service?.price_cents > 0 ? shipping_service.price_cents : FLAT_RATE;
   const subtotal = items.reduce((sum, i) => sum + (productMap[i.product_id].price * i.quantity), 0);
-  const total    = subtotal + SHIPPING_CENTAVOS;
+  const total    = subtotal + shippingCentavos;
   const orderId  = crypto.randomUUID();
 
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId, idempotency_key, status: 'pending',
     customer_name: cleanCustomer.name, customer_email: cleanCustomer.email, customer_phone: cleanCustomer.phone,
-    shipping_address, total, shipping_cost: SHIPPING_CENTAVOS
+    shipping_address, total, shipping_cost: shippingCentavos,
+    shipping_service_id:   shipping_service?.id   ?? null,
+    shipping_service_name: shipping_service?.name ?? null,
+    carrier:               shipping_service?.company ?? null,
+    shipping_deadline:     shipping_service?.delivery_time ?? null
   });
 
   if (orderErr) { await releaseAll(reserved); console.error('order insert error:', orderErr.message); res.status(500).json({ error: 'Erro ao criar pedido' }); return; }
@@ -90,13 +96,24 @@ export default async function handler(req, res) {
   try {
     pref = await prefClient.create({ body: {
       external_reference: orderId,
-      items: items.map(i => ({
-        id: i.product_id,
-        title: `${productMap[i.product_id].name} — ${i.size}${i.color ? ' / ' + i.color : ''}`,
-        quantity: i.quantity,
-        unit_price: +(productMap[i.product_id].price / 100).toFixed(2),
-        currency_id: 'BRL'
-      })),
+      items: [
+        ...items.map(i => ({
+          id: i.product_id,
+          title: `${productMap[i.product_id].name} — ${i.size}${i.color ? ' / ' + i.color : ''}`,
+          quantity: i.quantity,
+          unit_price: +(productMap[i.product_id].price / 100).toFixed(2),
+          currency_id: 'BRL'
+        })),
+        {
+          id: 'frete',
+          title: shipping_service?.name
+            ? `Frete — ${shipping_service.company} ${shipping_service.name}`
+            : 'Frete',
+          quantity: 1,
+          unit_price: +(shippingCentavos / 100).toFixed(2),
+          currency_id: 'BRL'
+        }
+      ],
       payer: { name: cleanCustomer.name, email: cleanCustomer.email },
       payment_methods: { installments: 1 },
       back_urls: {

@@ -219,7 +219,7 @@ export default async function handler(req, res) {
       const from   = (page - 1) * PAGE_SIZE;
 
       let query = supabase.from('orders')
-        .select('id, status, customer_name, customer_email, total, tracking_code, created_at, paid_at', { count: 'exact' })
+        .select('id, status, customer_name, customer_email, total, shipping_cost, carrier, shipping_service_name, shipping_deadline, tracking_code, me_order_id, created_at, paid_at', { count: 'exact' })
         .order('created_at', { ascending: false }).range(from, from + PAGE_SIZE - 1);
 
       if (status && VALID_STATUSES.includes(status)) query = query.eq('status', status);
@@ -253,6 +253,7 @@ export default async function handler(req, res) {
       if (body.tracking_code !== undefined) updates.tracking_code = body.tracking_code?.trim() || null;
       if (body.carrier       !== undefined) updates.carrier       = body.carrier?.trim()        || null;
       if (body.notes         !== undefined) updates.notes         = body.notes?.trim()          || null;
+      if (body.me_order_id   !== undefined) updates.me_order_id   = body.me_order_id?.trim()   || null;
 
       if (!Object.keys(updates).length) { res.status(400).json({ error: 'Nenhum campo para atualizar' }); return; }
 
