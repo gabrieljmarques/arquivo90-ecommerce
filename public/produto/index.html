@@ -336,28 +336,7 @@
                </div>`
             : `<p class="info__price">${fmt(p.price)}</p>`}
 
-          ${(() => {
-            const PIX_DISCOUNT = 0.05;
-            const pixPrice  = Math.floor(p.price * (1 - PIX_DISCOUNT));
-            const savings   = p.price - pixPrice;
-            const pct       = Math.round(PIX_DISCOUNT * 100);
-            return `<div class="pix-offer">
-              <div class="pix-offer__icon">
-                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M112.57 391.19c20.056 0 38.928-7.808 53.12-22l76.693-76.692c5.385-5.385 14.768-5.373 20.141 0l76.989 76.989c14.192 14.192 33.064 22 53.12 22h15.139l-97.138 97.138c-29.43 29.432-77.159 29.432-106.589 0l-97.424-97.435h6.949zm287.063-271.395c-20.056 0-38.928 7.808-53.12 22.001l-76.989 76.989c-5.555 5.556-14.586 5.556-20.141 0l-76.693-76.693c-14.192-14.192-33.064-22-53.12-22h-6.95l97.424-97.424c29.43-29.431 77.159-29.431 106.589 0l97.138 97.138-14.138-.011zm40.756 45.548l-49.886-49.887h.044a74.969 74.969 0 0 1 0 105.96l-50.282 50.283a12.52 12.52 0 0 1 0 17.696l50.282 50.27c14.122 14.133 21.91 32.93 21.91 52.98s-7.788 38.848-21.91 52.981l49.842 49.853c49.448-49.448 49.448-129.721 0-179.17l-23.284-23.284c-6.509-6.51-6.509-17.076 0-23.585l23.284-23.284c49.448-49.448 49.448-129.71 0-179.158v.011zM23.324 335.452c-31.099-49.448-31.099-129.721 0-179.17l49.886-49.886c-49.448 49.448-49.448 129.71 0 179.159l23.284 23.284c6.509 6.509 6.509 17.075 0 23.584l-23.284 23.285c-49.448 49.448-49.448 129.721 0 179.17l-49.886-49.887c-31.099-49.448-31.099-129.71 0-179.17v.011z"/>
-                </svg>
-              </div>
-              <div class="pix-offer__body">
-                <div>
-                  <span class="pix-offer__price">${fmt(pixPrice)} no pix</span>
-                  <span class="pix-offer__badge">${pct}% de desconto</span>
-                </div>
-                <p class="pix-offer__savings">Pague com pix e economize ${fmt(savings)}</p>
-              </div>
-            </div>`;
-          })()}
-
-          ${sizes.length ? colorSelectorHtml : ''}
+${sizes.length ? colorSelectorHtml : ''}
 
           <button class="btn btn--primary btn--full" id="btn-buy" ${isEsgotado ? 'disabled' : ''}>
             ${isEsgotado ? 'Esgotado' : 'Adicionar ao carrinho'}
