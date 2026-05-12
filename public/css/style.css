@@ -545,6 +545,15 @@ a  { color: inherit; text-decoration: none; }
 .info__section-label { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 0.8rem; }
 .info__specs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; font-size: 0.88rem; color: var(--ink-mid); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; }
 
+/* ── PIX offer block ── */
+.pix-offer { display: flex; align-items: center; gap: 0.9rem; background: #f0faf7; border: 1px solid #b2e0d6; padding: 0.85rem 1rem; margin-bottom: 2rem; }
+.pix-offer__icon { flex-shrink: 0; width: 28px; height: 28px; background: #32bcad; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.pix-offer__icon svg { fill: #fff; width: 16px; height: 16px; }
+.pix-offer__body { flex: 1; }
+.pix-offer__price { font-family: var(--font-sc); font-size: 1rem; font-weight: 700; color: #1a7a6e; letter-spacing: 0.04em; }
+.pix-offer__badge { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; background: #32bcad; color: #fff; padding: 0.15rem 0.45rem; margin-left: 0.5rem; vertical-align: middle; }
+.pix-offer__savings { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.06em; color: #2a9d8f; margin-top: 0.2rem; }
+
 /* ── Nav dropdown ── */
 .nav-dropdown-wrap {
   position: relative;
