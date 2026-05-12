@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const fromDb   = Object.fromEntries((data || []).map(r => [r.key, r.value]));
     // Merge DB values over defaults
     const settings = { ...DEFAULTS, ...fromDb };
-    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'public, s-maxage=5, stale-while-revalidate=10');
     res.json({ settings });
   } catch {
     res.json({ settings: DEFAULTS });
