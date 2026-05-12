@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -9,25 +9,23 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-
-  <div class="announcement-bar" id="announcement-bar">
-    <div class="ann-inner" id="ann-inner">
-      <span class="ann-item">Entrega para todo o Brasil</span>
-      <span class="ann-item">·</span>
-      <span class="ann-item">Algodão 210g</span>
-      <span class="ann-item">·</span>
-      <span class="ann-item">DTF 300dpi</span>
-      <span class="ann-item">·</span>
-      <span class="ann-item">Entrega para todo o Brasil</span>
-      <span class="ann-item">·</span>
-      <span class="ann-item">Algodão 210g</span>
-      <span class="ann-item">·</span>
-      <span class="ann-item">DTF 300dpi</span>
-      <span class="ann-item">·</span>
+<header class="header" id="header">
+    <div class="announcement-bar" id="announcement-bar">
+      <div class="ann-inner" id="ann-inner">
+        <span class="ann-item">Entrega para todo o Brasil</span>
+        <span class="ann-item">·</span>
+        <span class="ann-item">Algodão 210g</span>
+        <span class="ann-item">·</span>
+        <span class="ann-item">DTF 300dpi</span>
+        <span class="ann-item">·</span>
+        <span class="ann-item">Entrega para todo o Brasil</span>
+        <span class="ann-item">·</span>
+        <span class="ann-item">Algodão 210g</span>
+        <span class="ann-item">·</span>
+        <span class="ann-item">DTF 300dpi</span>
+        <span class="ann-item">·</span>
+      </div>
     </div>
-  </div>
-
-  <header class="header" id="header">
     <div class="header__main">
       <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu">
         <span></span><span></span><span></span>
@@ -215,6 +213,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
+    import { initAnnouncement } from '/js/announcement.js';
+    initAnnouncement();
     import { initCartButton, fmt } from '/js/cart.js';
     import { initNav, buildNavDrawer } from '/js/nav.js';
 
@@ -225,19 +225,6 @@
     window.addEventListener('scroll', () => {
       header.classList.toggle('scrolled', scrollY > 40);
     }, { passive: true });
-
-    // ── Load announcement ──
-    fetch('/api/site-settings').then(r => r.json()).then(({ settings }) => {
-      if (settings?.announcement?.text) {
-        const annInner = document.getElementById('ann-inner');
-        if (annInner) {
-          const parts = settings.announcement.text.split(/\s*·\s*/).filter(Boolean);
-          const items = parts.flatMap(p => [p, '·']);
-          const doubled = [...items, ...items];
-          annInner.innerHTML = doubled.map(t => `<span class="ann-item">${t}</span>`).join('');
-        }
-      }
-    }).catch(() => {});
 
     // ── State ──
     const PER_PAGE   = 12;
