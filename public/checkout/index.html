@@ -129,16 +129,26 @@
   <script type="module">
     import { getCart, clearCart, removeFromCart, calculateShipping, createPayment, fmt, toast, setLoading } from '/js/api.js';
 
-    const FLAT_RATE = 2500; // fallback quando ME não configurado
+    const FLAT_RATE        = 2500;  // fallback quando ME não configurado
+    const FREE_THRESHOLD   = 25000; // R$ 250 — frete grátis acima desse valor
 
     let cart             = getCart();
     let selectedShipping = null; // { id, name, company, price_cents, delivery_time }
     let shippingOptions  = null; // null = não calculado, [] = sem opções
     let isFallback       = false;
 
+    function subtotal() {
+      return cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+    }
+    function isFreeShipping() {
+      return subtotal() >= FREE_THRESHOLD;
+    }
+
     // ── Summary ────────────────────────────────────────────────────────────────
     function shippingCost() {
-      if (isFallback || !shippingOptions) return FLAT_RATE;
+      if (isFreeShipping())              return 0;
+      if (shippingOptions === null)      return null;   // ainda não calculado
+      if (isFallback)                    return FLAT_RATE;
       return selectedShipping?.price_cents ?? null;
     }
 
@@ -148,13 +158,15 @@
         el.innerHTML = '<p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio. <a href="/" style="color:var(--ink)">Ver produtos</a></p>';
         return;
       }
-      const subtotal = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-      const freight  = shippingCost();
-      const total    = freight !== null ? subtotal + freight : subtotal;
+      const sub     = subtotal();
+      const freight = shippingCost();
+      const total   = freight !== null ? sub + freight : sub;
 
       const freteLabel = freight === null
-        ? '<span style="color:var(--ink-faint)">selecione</span>'
-        : fmt(freight);
+        ? '<span style="color:var(--ink-faint)">a calcular</span>'
+        : freight === 0
+          ? '<span style="color:#3a7c52;font-weight:600">Grátis</span>'
+          : fmt(freight);
 
       el.innerHTML = `
         ${cart.map(i => `
@@ -170,7 +182,7 @@
           </div>`).join('')}
         <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem">
           <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.5rem">
-            <span>Subtotal</span><span>${fmt(subtotal)}</span>
+            <span>Subtotal</span><span>${fmt(sub)}</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.8rem">
             <span>Frete</span><span>${freteLabel}</span>
@@ -187,6 +199,8 @@
     };
 
     renderSummary();
+    // Mostrar frete grátis imediatamente se carrinho já ultrapassar threshold
+    if (isFreeShipping()) updateFreeShippingBanner();
 
     // ── Shipping quote ─────────────────────────────────────────────────────────
     function deadlineText(opt) {
@@ -196,7 +210,22 @@
       return days ? `${days} dia${days === 1 ? '' : 's'} úteis` : '';
     }
 
+    // Mostrar banner de frete grátis se aplicável
+    function updateFreeShippingBanner() {
+      const section = document.getElementById('shipping-section');
+      const body    = document.getElementById('shipping-body');
+      if (isFreeShipping()) {
+        section.style.display = 'block';
+        body.innerHTML = `<p style="font-family:var(--font-sc);font-size:0.88rem;letter-spacing:0.04em;color:#3a7c52;padding:0.6rem 0">Frete grátis para este pedido.</p>`;
+        renderSummary();
+        return true;
+      }
+      return false;
+    }
+
     function renderShippingOptions(options, fallback) {
+      if (updateFreeShippingBanner()) return; // frete grátis — não mostra opções
+
       const section = document.getElementById('shipping-section');
       const body    = document.getElementById('shipping-body');
       section.style.display = 'block';
@@ -300,8 +329,8 @@
       e.preventDefault();
       if (!cart.length) { toast('Carrinho vazio', 'error'); return; }
 
-      // Require shipping selection when options were loaded
-      if (!isFallback && shippingOptions?.length && !selectedShipping) {
+      // Require shipping selection when options were loaded (skip if free shipping)
+      if (!isFreeShipping() && !isFallback && shippingOptions?.length && !selectedShipping) {
         toast('Selecione uma opção de frete', 'error'); return;
       }
 

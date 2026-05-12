@@ -60,11 +60,20 @@ export default async function handler(req, res) {
     reserved.push({ p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null });
   }
 
-  // Use ME shipping if provided, otherwise flat-rate R$ 25
-  const FLAT_RATE          = 2500;
-  const shippingCentavos   = shipping_service?.price_cents > 0 ? shipping_service.price_cents : FLAT_RATE;
+  const FLAT_RATE        = 2500;   // fallback sem ME configurado
+  const FREE_THRESHOLD   = 25000; // R$ 250 — frete grátis
+
   const subtotal = items.reduce((sum, i) => sum + (productMap[i.product_id].price * i.quantity), 0);
-  const total    = subtotal + shippingCentavos;
+
+  // Server-side free shipping enforcement — ignora o que o frontend enviou
+  let shippingCentavos;
+  if (subtotal >= FREE_THRESHOLD) {
+    shippingCentavos = 0;
+  } else {
+    shippingCentavos = shipping_service?.price_cents > 0 ? shipping_service.price_cents : FLAT_RATE;
+  }
+
+  const total = subtotal + shippingCentavos;
   const orderId  = crypto.randomUUID();
 
   const { error: orderErr } = await supabase.from('orders').insert({
@@ -104,7 +113,7 @@ export default async function handler(req, res) {
           unit_price: +(productMap[i.product_id].price / 100).toFixed(2),
           currency_id: 'BRL'
         })),
-        {
+        ...(shippingCentavos > 0 ? [{
           id: 'frete',
           title: shipping_service?.name
             ? `Frete — ${shipping_service.company} ${shipping_service.name}`
@@ -112,7 +121,7 @@ export default async function handler(req, res) {
           quantity: 1,
           unit_price: +(shippingCentavos / 100).toFixed(2),
           currency_id: 'BRL'
-        }
+        }] : [])
       ],
       payer: { name: cleanCustomer.name, email: cleanCustomer.email },
       payment_methods: { installments: 1 },
