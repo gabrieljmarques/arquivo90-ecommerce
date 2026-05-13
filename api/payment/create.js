@@ -23,9 +23,11 @@ export default async function handler(req, res) {
   if (!shipping_address?.cep || !shipping_address?.rua || !shipping_address?.cidade) { res.status(400).json({ error: 'Endereço incompleto' }); return; }
 
   const cleanCustomer = {
-    name:  customer.name.trim().slice(0, 100),
-    email: customer.email.toLowerCase().trim(),
-    phone: customer.phone?.trim().slice(0, 20) || null
+    name:      customer.name.trim().slice(0, 100),
+    email:     customer.email.toLowerCase().trim(),
+    phone:     customer.phone?.trim().slice(0, 20) || null,
+    cpf:       customer.cpf?.replace(/\D/g,'').slice(0, 11) || null,
+    birthdate: customer.birthdate?.trim().slice(0, 10) || null
   };
 
   const { data: existing } = await supabase.from('orders').select('id, mp_preference_id').eq('idempotency_key', idempotency_key).maybeSingle();
@@ -102,6 +104,7 @@ export default async function handler(req, res) {
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId, idempotency_key, status: 'pending',
     customer_name: cleanCustomer.name, customer_email: cleanCustomer.email, customer_phone: cleanCustomer.phone,
+    customer_cpf: cleanCustomer.cpf, customer_birthdate: cleanCustomer.birthdate,
     shipping_address, total, shipping_cost: shippingCentavos,
     shipping_service_id:   shipping_service?.id   ?? null,
     shipping_service_name: shipping_service?.name ?? null,
@@ -153,7 +156,11 @@ export default async function handler(req, res) {
           currency_id: 'BRL'
         }] : [])
       ],
-      payer: { name: cleanCustomer.name, email: cleanCustomer.email },
+      payer: {
+        name:  cleanCustomer.name,
+        email: cleanCustomer.email,
+        ...(cleanCustomer.cpf ? { identification: { type: 'CPF', number: cleanCustomer.cpf } } : {})
+      },
       payment_methods: { installments: 3, default_installments: 1 },
       back_urls: {
         success: `${process.env.SITE_URL}/obrigado?order=${orderId}`,
