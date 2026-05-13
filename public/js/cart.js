@@ -1,5 +1,6 @@
 // Cart module — localStorage + drawer UI
-const CART_KEY = 'a90_cart';
+const CART_KEY       = 'a90_cart';
+const FREE_THRESHOLD = 25000; // R$ 250,00 em centavos
 
 export function fmt(n) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100);
@@ -56,11 +57,21 @@ function _mount() {
       <span class="cart-drawer__title">Carrinho</span>
       <button class="cart-close" id="cart-close">Fechar</button>
     </div>
+    <div class="cart-free-bar" id="cart-free-bar">
+      <p class="cart-free-bar__label" id="cart-free-bar-label"></p>
+      <div class="cart-free-bar__track">
+        <div class="cart-free-bar__fill" id="cart-free-bar-fill"></div>
+      </div>
+    </div>
     <div class="cart-drawer__items" id="cart-items"></div>
     <div class="cart-drawer__foot" id="cart-foot" style="display:none">
-      <div class="cart-total">
-        <span class="cart-total__label">Total</span>
-        <span class="cart-total__value" id="cart-total"></span>
+      <div class="cart-row">
+        <span class="cart-row__label">Subtotal</span>
+        <span class="cart-row__value" id="cart-total"></span>
+      </div>
+      <div class="cart-row cart-row--ship">
+        <span class="cart-row__label">Frete</span>
+        <span class="cart-row__value cart-row__ship" id="cart-ship"></span>
       </div>
       <a href="/checkout" class="btn btn--primary btn--full">Finalizar compra</a>
     </div>`;
@@ -88,6 +99,26 @@ function _render() {
     countEl.classList.toggle('has-items', count > 0);
   }
 
+  // ── Free-shipping progress bar ──
+  const barEl    = document.getElementById('cart-free-bar');
+  const barFill  = document.getElementById('cart-free-bar-fill');
+  const barLabel = document.getElementById('cart-free-bar-label');
+  if (barEl && barFill && barLabel) {
+    if (!cart.length) {
+      barEl.style.display = 'none';
+    } else if (total >= FREE_THRESHOLD) {
+      barEl.style.display = 'block';
+      barFill.style.width = '100%';
+      barLabel.innerHTML  = '🎉 Você ganhou frete grátis!';
+    } else {
+      const remaining = FREE_THRESHOLD - total;
+      const pct = Math.round((total / FREE_THRESHOLD) * 100);
+      barEl.style.display = 'block';
+      barFill.style.width = pct + '%';
+      barLabel.textContent = `Faltam ${fmt(remaining)} para frete grátis`;
+    }
+  }
+
   if (!cart.length) {
     itemsEl.innerHTML = '<div class="cart-empty">Seu carrinho está vazio.</div>';
     if (footEl) footEl.style.display = 'none';
@@ -97,7 +128,19 @@ function _render() {
   if (footEl) {
     footEl.style.display = 'block';
     const totalEl = document.getElementById('cart-total');
+    const shipEl  = document.getElementById('cart-ship');
     if (totalEl) totalEl.textContent = fmt(total);
+    if (shipEl) {
+      if (total >= FREE_THRESHOLD) {
+        shipEl.textContent  = 'Grátis';
+        shipEl.style.color  = 'var(--success)';
+        shipEl.style.fontWeight = '700';
+      } else {
+        shipEl.textContent = 'calculado no checkout';
+        shipEl.style.color = 'var(--ink-mid)';
+        shipEl.style.fontWeight = '';
+      }
+    }
   }
 
   itemsEl.innerHTML = cart.map((item, idx) => `
@@ -108,7 +151,10 @@ function _render() {
       <div class="cart-item__info">
         <p class="cart-item__name">${item.product_name}</p>
         <p class="cart-item__meta">${item.size}${item.color ? ' · ' + item.color : ''}</p>
-        <p class="cart-item__price">${fmt(item.unit_price)}</p>
+        <div class="cart-item__bottom">
+          <span class="cart-item__price">${fmt(item.unit_price)}</span>
+          <span class="cart-item__qty">Qtd&nbsp;${item.quantity}</span>
+        </div>
       </div>
       <button class="cart-item__remove" data-idx="${idx}" aria-label="Remover">×</button>
     </div>`).join('');

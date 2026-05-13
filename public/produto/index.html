@@ -410,6 +410,37 @@ ${sizes.length ? colorSelectorHtml : ''}
         th.addEventListener('click', () => setMainImage(i));
       });
 
+      // ── Image lightbox ──
+      (function initLightbox() {
+        const lb = document.createElement('div');
+        lb.className = 'lightbox';
+        lb.id = 'img-lightbox';
+        lb.innerHTML = `
+          <button class="lightbox__close" aria-label="Fechar">&times;</button>
+          <img class="lightbox__img" id="lightbox-img" src="" alt="">`;
+        document.body.appendChild(lb);
+
+        function openLightbox(src, alt) {
+          const img = document.getElementById('lightbox-img');
+          img.src = src;
+          img.alt = alt || '';
+          lb.classList.add('open');
+          document.body.style.overflow = 'hidden';
+        }
+        function closeLightbox() {
+          lb.classList.remove('open');
+          document.body.style.overflow = '';
+        }
+
+        const mainImg = document.getElementById('gallery-main');
+        if (mainImg) {
+          mainImg.addEventListener('click', () => openLightbox(mainImg.src, mainImg.alt));
+        }
+        lb.querySelector('.lightbox__close').addEventListener('click', closeLightbox);
+        lb.addEventListener('click', e => { if (e.target === lb) closeLightbox(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+      })();
+
       // ── Variant state ──
       let selectedColor = null;
       let selectedSize  = null;

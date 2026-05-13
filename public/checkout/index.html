@@ -21,9 +21,22 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .form-grid .full { grid-column: 1 / -1; }
     .summary { position: sticky; top: 6.5rem; }
-    .summary-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+    .summary-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.9rem 0; border-bottom: 1px solid var(--border); font-size: 0.95rem; gap: 0.75rem; }
     .summary-item:last-of-type { border-bottom: none; }
+    .summary-item__img { width: 54px; height: 70px; object-fit: cover; background: var(--surface); flex-shrink: 0; display: block; }
+    .summary-item__info { flex: 1; min-width: 0; }
+    .summary-item__actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; flex-shrink: 0; }
     .summary-total { display: flex; justify-content: space-between; padding: 1.2rem 0 0; font-family: var(--font-sc); letter-spacing: 0.05em; }
+
+    /* Coupon in sidebar */
+    .summary-coupon { padding: 1rem 0; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+    .summary-coupon__row { display: flex; gap: 0.6rem; }
+    .summary-coupon__input { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; flex: 1; padding: 0.65rem 0.8rem; border: 1px solid var(--border); background: transparent; color: var(--ink); outline: none; transition: border-color 0.15s; }
+    .summary-coupon__input:focus { border-color: var(--ink); }
+    .summary-coupon__input::placeholder { color: var(--ink-faint); }
+    .summary-coupon__btn { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.65rem 0.9rem; border: 1px solid var(--border); background: transparent; color: var(--ink-mid); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: var(--trans); }
+    .summary-coupon__btn:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
+    .summary-coupon__feedback { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.06em; min-height: 1.2em; margin-top: 0.45rem; }
     @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 6rem; } .summary { position: static; } }
 
     /* ── Trust strip ── */
@@ -130,21 +143,9 @@
           <div id="shipping-body"></div>
         </div>
 
-        <!-- Cupom de desconto -->
-        <div style="margin-bottom:2rem">
-          <h3 style="margin-bottom:1rem;font-size:1rem;letter-spacing:0.05em">Cupom de desconto</h3>
-          <div style="display:flex;gap:0.75rem">
-            <input class="input" id="coupon-input" type="text" placeholder="CÓDIGO" maxlength="50"
-              style="text-transform:uppercase;flex:1;letter-spacing:0.08em" autocomplete="off" spellcheck="false">
-            <button type="button" class="btn btn--ghost" id="btn-coupon"
-              style="padding:0.75rem 1.2rem;font-size:0.75rem;flex-shrink:0">Aplicar</button>
-          </div>
-          <div id="coupon-feedback" style="margin-top:0.5rem;font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.06em;min-height:1.2em"></div>
-        </div>
-
         <button type="submit" class="btn btn--primary btn--full" id="btn-submit" style="display:flex;align-items:center;justify-content:center;gap:0.6rem;font-size:0.88rem;letter-spacing:0.1em;padding:1.1rem">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          FINALIZAR PEDIDO
+          IR PARA PAGAMENTO
         </button>
 
         <div class="checkout-trust">
@@ -170,10 +171,22 @@
 
     <!-- Resumo -->
     <div class="summary">
-      <h3 style="margin-bottom:1.5rem;font-size:1rem;letter-spacing:0.05em">Resumo do pedido</h3>
-      <div id="cart-summary">
+      <h3 style="margin-bottom:1.25rem;font-size:1rem;letter-spacing:0.05em">Resumo do pedido</h3>
+      <div id="summary-items">
         <p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio.</p>
       </div>
+
+      <!-- Cupom -->
+      <div class="summary-coupon">
+        <div class="summary-coupon__row">
+          <input class="summary-coupon__input" id="coupon-input" type="text" placeholder="CUPOM DE DESCONTO"
+            maxlength="50" autocomplete="off" spellcheck="false">
+          <button type="button" class="summary-coupon__btn" id="btn-coupon">Aplicar</button>
+        </div>
+        <div class="summary-coupon__feedback" id="coupon-feedback"></div>
+      </div>
+
+      <div id="summary-totals"></div>
     </div>
   </div>
 
@@ -205,49 +218,63 @@
     }
 
     function renderSummary() {
-      const el = document.getElementById('cart-summary');
+      const itemsEl  = document.getElementById('summary-items');
+      const totalsEl = document.getElementById('summary-totals');
       if (!cart.length) {
-        el.innerHTML = '<p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio. <a href="/" style="color:var(--ink)">Ver produtos</a></p>';
+        if (itemsEl)  itemsEl.innerHTML  = '<p style="color:var(--ink-mid);font-size:0.9rem">Carrinho vazio. <a href="/" style="color:var(--ink)">Ver produtos</a></p>';
+        if (totalsEl) totalsEl.innerHTML = '';
         return;
       }
-      const sub      = subtotal();
-      const freight  = shippingCost();
-      const discount = appliedCoupon ? appliedCoupon.discount_amount : 0;
-      const total    = freight !== null ? sub + freight - discount : sub - discount;
 
-      const freteLabel = freight === null
-        ? '<span style="color:var(--ink-faint)">a calcular</span>'
-        : freight === 0
-          ? '<span style="color:#3a7c52;font-weight:600">Grátis</span>'
-          : fmt(freight);
-
-      el.innerHTML = `
-        ${cart.map(i => `
+      // ── Items ──
+      if (itemsEl) {
+        itemsEl.innerHTML = cart.map(i => `
           <div class="summary-item">
-            <div>
-              <div style="font-family:var(--font-sc);font-size:0.9rem">${i.product_name}</div>
-              <div style="color:var(--ink-mid);font-size:0.8rem;margin-top:0.2rem">Tamanho ${i.size}${i.color ? ' · ' + i.color : ''} &bull; Qtd ${i.quantity}</div>
+            ${i.image
+              ? `<img class="summary-item__img" src="${i.image}" alt="${i.product_name}">`
+              : `<div class="summary-item__img"></div>`}
+            <div class="summary-item__info">
+              <div style="font-family:var(--font-sc);font-size:0.9rem;line-height:1.2">${i.product_name}</div>
+              <div style="color:var(--ink-mid);font-size:0.78rem;margin-top:0.25rem;font-family:var(--font-mono);letter-spacing:0.04em">
+                ${i.size}${i.color ? ' · ' + i.color : ''} · Qtd ${i.quantity}
+              </div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
+            <div class="summary-item__actions">
               <span style="font-family:var(--font-sc);font-size:0.9rem">${fmt(i.unit_price * i.quantity)}</span>
-              <button onclick="removeItem('${i.product_id}','${i.size}','${i.color||''}')" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.75rem;font-family:var(--font-sc);letter-spacing:0.05em">remover</button>
+              <button onclick="removeItem('${i.product_id}','${i.size}','${i.color||''}')" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.75rem;font-family:var(--font-sc);letter-spacing:0.05em;padding:0">remover</button>
             </div>
-          </div>`).join('')}
-        <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:0.5rem">
-          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.5rem">
-            <span>Subtotal</span><span>${fmt(sub)}</span>
-          </div>
-          ${discount > 0 ? `
-          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#3a7c52;margin-bottom:0.5rem">
-            <span>Desconto (${appliedCoupon.code})</span><span>− ${fmt(discount)}</span>
-          </div>` : ''}
-          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.8rem">
-            <span>Frete</span><span>${freteLabel}</span>
-          </div>
-          ${freight !== null
-            ? `<div class="summary-total"><span>Total</span><span>${fmt(Math.max(0, total))}</span></div>`
-            : `<div class="summary-total" style="opacity:0.4"><span>Total</span><span>—</span></div>`}
-        </div>`;
+          </div>`).join('');
+      }
+
+      // ── Totals ──
+      if (totalsEl) {
+        const sub      = subtotal();
+        const freight  = shippingCost();
+        const discount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+        const total    = freight !== null ? sub + freight - discount : sub - discount;
+        const freteLabel = freight === null
+          ? '<span style="color:var(--ink-faint)">a calcular</span>'
+          : freight === 0
+            ? '<span style="color:#3a7c52;font-weight:600">Grátis</span>'
+            : fmt(freight);
+
+        totalsEl.innerHTML = `
+          <div style="padding-top:1rem">
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.5rem">
+              <span>Subtotal</span><span>${fmt(sub)}</span>
+            </div>
+            ${discount > 0 ? `
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#3a7c52;margin-bottom:0.5rem">
+              <span>Desconto (${appliedCoupon.code})</span><span>− ${fmt(discount)}</span>
+            </div>` : ''}
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:var(--ink-mid);margin-bottom:0.8rem">
+              <span>Frete</span><span>${freteLabel}</span>
+            </div>
+            ${freight !== null
+              ? `<div class="summary-total"><span>Total</span><span>${fmt(Math.max(0, total))}</span></div>`
+              : `<div class="summary-total" style="opacity:0.4"><span>Total</span><span>—</span></div>`}
+          </div>`;
+      }
     }
 
     window.removeItem = (product_id, size, color) => {
