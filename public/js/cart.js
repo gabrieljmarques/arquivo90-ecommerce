@@ -32,6 +32,15 @@ export function removeItem(idx) {
   _render();
 }
 
+export function changeQty(idx, delta) {
+  const cart = getCart();
+  if (!cart[idx]) return;
+  cart[idx].quantity += delta;
+  if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+  saveCart(cart);
+  _render();
+}
+
 export function clearCart() {
   localStorage.removeItem(CART_KEY);
 }
@@ -153,7 +162,11 @@ function _render() {
         <p class="cart-item__meta">${item.size}${item.color ? ' · ' + item.color : ''}</p>
         <div class="cart-item__bottom">
           <span class="cart-item__price">${fmt(item.unit_price)}</span>
-          <span class="cart-item__qty">Qtd&nbsp;${item.quantity}</span>
+          <div class="cart-item__qty-ctrl">
+            <button class="qty-btn" data-idx="${idx}" data-delta="-1" aria-label="Diminuir">−</button>
+            <span class="qty-val">${item.quantity}</span>
+            <button class="qty-btn" data-idx="${idx}" data-delta="1" aria-label="Aumentar">+</button>
+          </div>
         </div>
       </div>
       <button class="cart-item__remove" data-idx="${idx}" aria-label="Remover">×</button>
@@ -161,6 +174,9 @@ function _render() {
 
   itemsEl.querySelectorAll('.cart-item__remove').forEach(btn => {
     btn.addEventListener('click', () => removeItem(+btn.dataset.idx));
+  });
+  itemsEl.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', () => changeQty(+btn.dataset.idx, +btn.dataset.delta));
   });
 }
 
