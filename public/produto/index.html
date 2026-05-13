@@ -140,6 +140,7 @@
   <script type="module">
     import { initCartButton, addItem, openCart, fmt } from '/js/cart.js';
     import { initNav, buildNavDrawer } from '/js/nav.js';
+    import { calculateShipping } from '/js/api.js';
 
     initCartButton('#cart-toggle');
     initNav('/produto');
@@ -338,9 +339,62 @@
 
 ${sizes.length ? colorSelectorHtml : ''}
 
-          <button class="btn btn--primary btn--full" id="btn-buy" ${isEsgotado ? 'disabled' : ''}>
+          ${(() => {
+            const inst = Math.ceil(p.price / 3 / 100 * 100) / 100;
+            return `<p class="info__installments">3x de R$ ${(p.price / 3 / 100).toFixed(2).replace('.',',')} sem juros no cartão</p>`;
+          })()}
+
+          <button class="btn btn--primary btn--full" id="btn-buy" ${isEsgotado ? 'disabled' : ''} style="margin-bottom:1.25rem">
             ${isEsgotado ? 'Esgotado' : 'Adicionar ao carrinho'}
           </button>
+
+          <div class="prod-accordions">
+
+            <div class="prod-acc">
+              <button class="prod-acc__head" onclick="this.parentElement.classList.toggle('open')">
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  Formas de pagamento
+                </span>
+                <svg class="prod-acc__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="prod-acc__body">
+                <div class="prod-acc__pay-row">
+                  <span class="prod-acc__pay-label">Cartão de crédito</span>
+                  <span class="prod-acc__pay-detail">3x de R$ ${(p.price / 3 / 100).toFixed(2).replace('.',',')} sem juros</span>
+                </div>
+                <div class="prod-acc__pay-row">
+                  <span class="prod-acc__pay-label">Pix</span>
+                  <span class="prod-acc__pay-detail">À vista</span>
+                </div>
+                <div class="prod-acc__pay-row">
+                  <span class="prod-acc__pay-label">Boleto</span>
+                  <span class="prod-acc__pay-detail">À vista · vence em 3 dias</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="prod-acc">
+              <button class="prod-acc__head" onclick="this.parentElement.classList.toggle('open')">
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  Calcular frete
+                </span>
+                <svg class="prod-acc__chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="prod-acc__body">
+                <div style="display:flex;gap:0.6rem;margin-bottom:0.75rem">
+                  <input id="frete-cep" class="input" type="text" maxlength="9" placeholder="00000-000"
+                    style="font-family:var(--font-mono);font-size:0.82rem;letter-spacing:0.06em;flex:1"
+                    oninput="this.value=this.value.replace(/\\D/g,'').slice(0,8).replace(/(\\d{5})(\\d)/,'\$1-\$2')">
+                  <button class="btn btn--ghost" onclick="calcFrete()" id="btn-frete"
+                    style="font-size:0.72rem;padding:0.65rem 1rem;white-space:nowrap;flex-shrink:0">Calcular</button>
+                </div>
+                <div id="frete-result"></div>
+              </div>
+            </div>
+
+          </div>
 
           ${p.description ? `<hr class="divider"><div class="product-description" id="product-description"></div>` : ''}
 
@@ -431,9 +485,54 @@ ${sizes.length ? colorSelectorHtml : ''}
         toast('Adicionado ao carrinho', 'success');
         setTimeout(() => openCart(), 400);
       });
+
+      // Disponibiliza o product id para o simulador de frete
+      _freteProductId = p.id;
     }
 
     load();
+
+    // ── Simulador de frete na página de produto ──────────────────────────────
+    let _freteProductId = null; // set after load()
+
+    window.calcFrete = async function() {
+      const cepRaw = document.getElementById('frete-cep')?.value.replace(/\D/g,'');
+      const result = document.getElementById('frete-result');
+      const btn    = document.getElementById('btn-frete');
+      if (!cepRaw || cepRaw.length !== 8) {
+        if (result) result.innerHTML = `<p style="font-family:var(--font-mono);font-size:0.65rem;color:var(--error);letter-spacing:0.06em">CEP inválido</p>`;
+        return;
+      }
+      if (!_freteProductId) return;
+      btn.disabled = true; btn.textContent = '...';
+      if (result) result.innerHTML = `<p style="font-family:var(--font-mono);font-size:0.65rem;color:var(--ink-faint);letter-spacing:0.06em">Calculando...</p>`;
+      try {
+        const data = await calculateShipping({ cep: cepRaw, items: [{ product_id: _freteProductId, quantity: 1 }] });
+        if (data.fallback || !data.options?.length) {
+          result.innerHTML = `<p style="font-family:var(--font-mono);font-size:0.65rem;color:var(--ink-mid);letter-spacing:0.06em">Frete fixo estimado: R$ 25,00</p>`;
+        } else {
+          result.innerHTML = data.options.map(o => {
+            const days = o.delivery_min && o.delivery_max && o.delivery_min !== o.delivery_max
+              ? `${o.delivery_min}–${o.delivery_max} dias úteis`
+              : `${o.delivery_time ?? o.delivery_min ?? ''} dias úteis`;
+            return `<div class="frete-opt">
+              <div>
+                <span class="frete-opt__name">${o.company} ${o.name}</span>
+                <span class="frete-opt__days">${days}</span>
+              </div>
+              <span class="frete-opt__price">${fmt(o.price_cents)}</span>
+            </div>`;
+          }).join('');
+        }
+      } catch {
+        result.innerHTML = `<p style="font-family:var(--font-mono);font-size:0.65rem;color:var(--error);letter-spacing:0.06em">Erro ao calcular frete. Tente novamente.</p>`;
+      }
+      btn.disabled = false; btn.textContent = 'Calcular';
+    };
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && document.activeElement?.id === 'frete-cep') calcFrete();
+    });
   </script>
 </body>
 </html>
