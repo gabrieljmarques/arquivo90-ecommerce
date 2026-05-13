@@ -201,6 +201,23 @@
     let shippingOptions  = null; // null = não calculado, [] = sem opções
     let isFallback       = false;
     let appliedCoupon    = null; // { code, type, value, discount_amount }
+    let coverMap         = {};   // product_id → cover image URL (fetched from API)
+
+    // Fetch cover images from API so the summary always shows the current front photo
+    // regardless of what's cached in localStorage
+    (async () => {
+      try {
+        const r = await fetch('/api/products');
+        if (!r.ok) return;
+        const { products } = await r.json();
+        for (const p of products || []) {
+          const imgs = p.product_images || [];
+          const cover = imgs.find(i => i.type === 'front') || imgs[0];
+          if (cover?.url) coverMap[p.id] = cover.url;
+        }
+        renderSummary();
+      } catch { /* silently keep item.image fallback */ }
+    })();
 
     function subtotal() {
       return cart.reduce((s, i) => s + i.unit_price * i.quantity, 0);
@@ -228,10 +245,12 @@
 
       // ── Items ──
       if (itemsEl) {
-        itemsEl.innerHTML = cart.map(i => `
+        itemsEl.innerHTML = cart.map(i => {
+          const imgUrl = coverMap[i.product_id] || i.image || '';
+          return `
           <div class="summary-item">
-            ${i.image
-              ? `<img class="summary-item__img" src="${i.image}" alt="${i.product_name}">`
+            ${imgUrl
+              ? `<img class="summary-item__img" src="${imgUrl}" alt="${i.product_name}">`
               : `<div class="summary-item__img"></div>`}
             <div class="summary-item__info">
               <div style="font-family:var(--font-sc);font-size:0.9rem;line-height:1.2">${i.product_name}</div>
@@ -243,7 +262,8 @@
               <span style="font-family:var(--font-sc);font-size:0.9rem">${fmt(i.unit_price * i.quantity)}</span>
               <button onclick="removeItem('${i.product_id}','${i.size}','${i.color||''}')" style="background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:0.75rem;font-family:var(--font-sc);letter-spacing:0.05em;padding:0">remover</button>
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
       }
 
       // ── Totals ──
