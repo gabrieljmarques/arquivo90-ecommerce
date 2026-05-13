@@ -558,11 +558,25 @@ a  { color: inherit; text-decoration: none; }
 .card { background: var(--surface); border: 1px solid var(--border); }
 
 /* ── Product page ── */
-.product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: start; padding-top: 7rem; }
-.gallery { position: sticky; top: 5rem; }
-.gallery__main { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; cursor: zoom-in; transition: opacity 0.3s; }
-.gallery__thumbs { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
-.gallery__thumb { width: 56px; height: 72px; object-fit: cover; cursor: pointer; border: 1px solid transparent; transition: border-color 0.2s; flex-shrink: 0; }
+.product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; padding-top: 5.5rem; }
+.gallery {
+  position: sticky; top: 5rem;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  grid-template-rows: auto;
+  gap: 0.6rem;
+  align-items: start;
+}
+.gallery__main {
+  grid-column: 2; grid-row: 1;
+  width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block;
+  cursor: zoom-in; transition: opacity 0.3s;
+}
+.gallery__thumbs {
+  grid-column: 1; grid-row: 1;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.gallery__thumb { width: 64px; height: 82px; object-fit: cover; cursor: pointer; border: 1px solid transparent; transition: border-color 0.2s; flex-shrink: 0; display: block; }
 .gallery__thumb.active { border-color: var(--ink); }
 .info { padding: 0.5rem 0; }
 .info__eyebrow { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mid); margin-bottom: 1rem; }
@@ -951,8 +965,11 @@ a  { color: inherit; text-decoration: none; }
   .header__main { padding: 0.85rem 1.25rem; }
   .header__logo { flex: 1; justify-content: center; }
   .header__actions { margin-left: 0; }
-  .product-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 5.5rem; }
-  .gallery { position: static; }
+  .product-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 5rem; }
+  .gallery { position: static; display: flex; flex-direction: column; gap: 0.6rem; }
+  .gallery__thumbs { flex-direction: row; flex-wrap: wrap; order: 2; }
+  .gallery__main { order: 1; }
+  .gallery__thumb { width: 54px; height: 68px; }
   .footer__links { display: none; }
   .catalog-layout { grid-template-columns: 1fr; }
   .filter-sidebar {
