@@ -162,22 +162,7 @@ export default async function handler(req, res) {
         }] : [])
       ],
       payer: { name: cleanCustomer.name, email: cleanCustomer.email },
-      payment_methods: {
-        installments: 12,
-        default_installments: 1,
-        // free_methods = bandeiras que usam "parcelado vendedor" (vendedor absorve até 3x)
-        // O número de parcelas sem juros é lido da configuração da conta MP
-        free_methods: [
-          { id: 'master' },
-          { id: 'visa' },
-          { id: 'elo' },
-          { id: 'hipercard' },
-          { id: 'amex' },
-          { id: 'debmaster' },
-          { id: 'debvisa' },
-          { id: 'elo_debito' }
-        ]
-      },
+      payment_methods: { installments: 12, default_installments: 1 },
       back_urls: {
         success: `${process.env.SITE_URL}/obrigado?order=${orderId}`,
         failure: `${process.env.SITE_URL}/checkout?erro=pagamento`,
