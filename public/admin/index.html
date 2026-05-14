@@ -454,7 +454,9 @@
       : '';
     showModal(`Pedido #${id.slice(-8).toUpperCase()}`, `
       <div style="display:grid;gap:0.8rem;margin-bottom:1.5rem;font-size:0.9rem">
-        <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;</div>
+        <div><span style="color:var(--ink-mid)">Cliente:</span> ${order.customer_name} &lt;${order.customer_email}&gt;${order.customer_phone ? ' · ' + order.customer_phone : ''}</div>
+        ${order.customer_cpf ? `<div><span style="color:var(--ink-mid)">CPF:</span> ${order.customer_cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</div>` : ''}
+        ${order.customer_birthdate ? `<div><span style="color:var(--ink-mid)">Nascimento:</span> ${order.customer_birthdate}</div>` : ''}
         <div><span style="color:var(--ink-mid)">Total:</span> R$ ${(order.total/100).toFixed(2).replace('.',',')}</div>
         ${couponLine}
         <div><span style="color:var(--ink-mid)">Endereço:</span> ${order.shipping_address?.rua}, ${order.shipping_address?.numero} — ${order.shipping_address?.cidade}/${order.shipping_address?.estado}</div>

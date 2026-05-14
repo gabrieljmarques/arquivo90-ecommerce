@@ -112,6 +112,7 @@ export default async function handler(req, res) {
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId, idempotency_key, status: 'pending',
     customer_name: cleanCustomer.name, customer_email: cleanCustomer.email, customer_phone: cleanCustomer.phone,
+    customer_cpf: cleanCustomer.cpf, customer_birthdate: cleanCustomer.birthdate,
     shipping_address, total, shipping_cost: shippingCentavos,
     shipping_service_id:   shipping_service?.id   ?? null,
     shipping_service_name: shipping_service?.name ?? null,
