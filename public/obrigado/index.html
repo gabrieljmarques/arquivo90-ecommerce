@@ -114,30 +114,37 @@
     .ty-pending-box p + p { margin-top: 0.5rem; color: var(--ink-mid); }
 
     .ty-pix {
-      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
+      padding: 2rem 1.5rem;
       margin-bottom: 1.5rem;
       text-align: center;
     }
     .ty-pix__label {
-      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--ink-mid); margin: 0 0 1rem;
+      font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--ink-mid); margin: 0 0 1.5rem;
     }
     .ty-pix__qr {
-      width: 180px; height: 180px; margin: 0 auto 1rem;
-      background: #fff; padding: 8px; border-radius: 4px; display: block;
+      width: 200px; height: 200px; margin: 0 auto 1.75rem;
+      background: #fff; padding: 10px; display: block;
     }
-    .ty-pix__code {
-      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.04em;
-      color: var(--ink-mid); word-break: break-all;
-      background: var(--bg); border: 1px solid var(--border);
-      padding: 0.6rem 0.8rem; border-radius: 4px; margin: 0 0 0.75rem;
-      cursor: pointer; transition: border-color 0.15s;
+    .ty-pix__btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em;
+      text-transform: uppercase; padding: 0.85rem 1.75rem;
+      border: 1px solid var(--ink); background: var(--ink); color: var(--bg);
+      cursor: pointer; transition: opacity 0.15s; margin-bottom: 0.75rem;
     }
-    .ty-pix__code:hover { border-color: var(--ink); }
-    .ty-pix__copy { font-size: 0.72rem; color: var(--ink-mid); }
+    .ty-pix__btn:hover { opacity: 0.85; }
+    .ty-pix__btn--copied { background: #3a7c52; border-color: #3a7c52; }
+    .ty-pix__hint {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      letter-spacing: 0.06em; color: var(--ink-mid); margin: 0;
+    }
+    .ty-pix__expire {
+      font-family: var(--font-mono); font-size: 0.62rem;
+      color: var(--ink-mid); margin: 1rem 0 0; letter-spacing: 0.06em;
+    }
   </style>
 </head>
 <body>
@@ -232,12 +239,16 @@
 
       const pixBlock = pixData?.qr_code ? `
         <div class="ty-pix">
-          <p class="ty-pix__label">PIX — escaneie ou copie o código</p>
+          <p class="ty-pix__label">Pague com PIX</p>
           ${pixData.qr_code_base64
             ? `<img class="ty-pix__qr" src="data:image/png;base64,${pixData.qr_code_base64}" alt="QR Code PIX">`
             : ''}
-          <pre class="ty-pix__code" id="pix-code" title="Clique para copiar">${pixData.qr_code}</pre>
-          <p class="ty-pix__copy" id="pix-copy-msg">Clique no código para copiar</p>
+          <button class="ty-pix__btn" id="pix-copy-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span id="pix-copy-label">Copiar código PIX</span>
+          </button>
+          <p class="ty-pix__hint">Ou escaneie o QR code com o app do seu banco</p>
+          <p class="ty-pix__expire">O código expira em 30 minutos</p>
         </div>` : '';
 
       el.innerHTML = `
@@ -266,11 +277,17 @@
 
       // PIX copy to clipboard
       if (pixData?.qr_code) {
-        document.getElementById('pix-code')?.addEventListener('click', async () => {
+        document.getElementById('pix-copy-btn')?.addEventListener('click', async () => {
           try {
             await navigator.clipboard.writeText(pixData.qr_code);
-            const msg = document.getElementById('pix-copy-msg');
-            if (msg) { msg.textContent = '✓ Código copiado!'; msg.style.color = '#3a7c52'; }
+            const btn   = document.getElementById('pix-copy-btn');
+            const label = document.getElementById('pix-copy-label');
+            if (label) label.textContent = 'Código copiado!';
+            if (btn)   btn.classList.add('ty-pix__btn--copied');
+            setTimeout(() => {
+              if (label) label.textContent = 'Copiar código PIX';
+              if (btn)   btn.classList.remove('ty-pix__btn--copied');
+            }, 3000);
           } catch {}
         });
       }
