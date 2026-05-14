@@ -32,7 +32,11 @@ export default async function handler(req, res) {
     // Merge DB values over defaults
     const settings = { ...DEFAULTS, ...fromDb };
     res.setHeader('Cache-Control', 'public, s-maxage=5, stale-while-revalidate=10');
-    res.json({ settings });
+    res.json({
+      settings,
+      supabaseUrl:     process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY
+    });
   } catch {
     res.json({ settings: DEFAULTS });
   }

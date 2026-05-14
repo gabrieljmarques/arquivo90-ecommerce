@@ -34,7 +34,7 @@
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    const cfg = await fetch('/api/site-config').then(r => r.json());
+    const cfg = await fetch('/api/site-settings').then(r => r.json());
     const sb  = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
     // Supabase coloca o token no hash da URL após o clique no email
