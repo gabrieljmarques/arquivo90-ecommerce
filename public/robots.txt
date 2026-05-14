@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /obrigado
+Disallow: /api/
+Disallow: /reset-password
+
+Sitemap: https://arquivo90.com.br/sitemap.xml

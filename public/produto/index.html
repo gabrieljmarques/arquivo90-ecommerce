@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arquivo 90</title>
+  <!-- Open Graph (preenchido via JS após carregar o produto) -->
+  <meta property="og:site_name" content="Arquivo 90">
+  <meta property="og:type"      content="product">
+  <meta property="og:title"     content="Arquivo 90" id="og-title">
+  <meta property="og:description" content="Memória em Tecido. Futebol brasileiro em peças de algodão 210g." id="og-description">
+  <meta property="og:image"     content="" id="og-image">
+  <meta property="og:url"       content="" id="og-url">
+  <meta name="twitter:card"     content="summary_large_image">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -265,6 +273,13 @@
 
       const p = result.product;
       document.title = `${p.name} — Arquivo 90`;
+
+      // Open Graph
+      const ogImg = p.product_images?.[0]?.url || '';
+      document.getElementById('og-title').setAttribute('content', `${p.name} — Arquivo 90`);
+      document.getElementById('og-description').setAttribute('content', p.description || 'Memória em Tecido. Futebol brasileiro em algodão 210g.');
+      document.getElementById('og-image').setAttribute('content', ogImg);
+      document.getElementById('og-url').setAttribute('content', window.location.href);
 
       _allImages   = p.product_images ?? [];
       _activeImages = _allImages;

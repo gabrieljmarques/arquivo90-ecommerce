@@ -5,20 +5,32 @@ import { sendAbandonedCart } from '../utils/email.js';
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') { res.status(405).end(); return; }
 
+  // Protect against unauthorized triggers
+  const secret = process.env.CRON_SECRET;
+  if (secret) {
+    const provided = req.query.secret || req.headers['x-cron-secret'];
+    if (provided !== secret) { res.status(401).json({ error: 'Unauthorized' }); return; }
+  }
+
   const job = req.query.job || 'all';
   const results = {};
 
-  if (job === 'expire' || job === 'all') {
-    results.expire = await runExpireReservations();
-  }
-  if (job === 'webhooks' || job === 'all') {
-    results.webhooks = await runProcessWebhooks();
-  }
-  if (job === 'abandoned' || job === 'all') {
-    results.abandoned = await runAbandonedCart();
-  }
+  try {
+    if (job === 'expire' || job === 'all') {
+      results.expire = await runExpireReservations().catch(e => ({ error: e.message }));
+    }
+    if (job === 'webhooks' || job === 'all') {
+      results.webhooks = await runProcessWebhooks().catch(e => ({ error: e.message }));
+    }
+    if (job === 'abandoned' || job === 'all') {
+      results.abandoned = await runAbandonedCart().catch(e => ({ error: e.message }));
+    }
 
-  res.json(results);
+    res.json({ ok: true, job, ...results });
+  } catch (err) {
+    console.error('cron handler error:', err.message, err.stack);
+    res.status(500).json({ error: err.message, job });
+  }
 }
 
 // ── Expire stock reservations ────────────────────────────────────────────────

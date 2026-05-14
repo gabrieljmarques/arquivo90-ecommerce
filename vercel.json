@@ -5,6 +5,7 @@
     { "path": "/api/cron?job=abandoned", "schedule": "0 4 * * *" }
   ],
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/produto/:path*", "destination": "/produto/index.html" },
     { "source": "/checkout",       "destination": "/checkout/index.html" },
     { "source": "/obrigado",       "destination": "/obrigado/index.html" },
