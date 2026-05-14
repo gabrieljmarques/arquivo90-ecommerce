@@ -239,11 +239,6 @@
           <p class="payment-confirm__sub" id="confirm-sub"></p>
         </div>
 
-        <!-- PIX discount nudge -->
-        <p style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#3a7c52;margin-bottom:1rem">
-          PIX · 5% de desconto aplicado automaticamente
-        </p>
-
         <!-- Bricks loading state -->
         <div class="bricks-loading" id="bricks-loading">
           <span class="spinner"></span> Carregando opções de pagamento...
@@ -366,6 +361,53 @@
       if (n === 3) { updateConfirmBox(); initBricks(); }
     }
 
+    // ── PIX badge injection ───────────────────────────────────────────────────
+    function injectPixBadge() {
+      const container = document.getElementById('paymentBrick_container');
+      if (!container) return;
+
+      function tryInject() {
+        // Procura elemento com texto exatamente "Pix" dentro do container
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.textContent.trim().toLowerCase() === 'pix') {
+            const parent = node.parentElement;
+            if (parent && !parent.querySelector('.a90-pix-badge')) {
+              const badge = document.createElement('span');
+              badge.className = 'a90-pix-badge';
+              badge.textContent = '5% OFF';
+              badge.style.cssText = [
+                'display:inline-block',
+                'background:#3a7c52',
+                'color:#fff',
+                'font-family:var(--font-mono)',
+                'font-size:0.55rem',
+                'font-weight:700',
+                'letter-spacing:0.1em',
+                'text-transform:uppercase',
+                'padding:0.18rem 0.45rem',
+                'border-radius:2px',
+                'margin-left:0.5rem',
+                'vertical-align:middle',
+                'line-height:1',
+              ].join(';');
+              parent.appendChild(badge);
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      // Tenta imediatamente e com retries caso o DOM do Bricks ainda esteja carregando
+      if (!tryInject()) {
+        const t1 = setTimeout(() => { if (!tryInject()) {
+          const t2 = setTimeout(tryInject, 800);
+        }}, 400);
+      }
+    }
+
     // ── Checkout Bricks ───────────────────────────────────────────────────────
     async function initBricks() {
       const loadingEl  = document.getElementById('bricks-loading');
@@ -436,7 +478,10 @@
           }
         },
         callbacks: {
-          onReady: () => { loadingEl.style.display = 'none'; },
+          onReady: () => {
+            loadingEl.style.display = 'none';
+            injectPixBadge();
+          },
           onSubmit: async ({ selectedPaymentMethod, formData }) => {
             const errBanner = document.getElementById('error-banner');
             errBanner.style.display = 'none';
