@@ -1,7 +1,8 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM   = 'Arquivo 90 <suporte@arquivo90.com.br>';
+const FROM     = 'Arquivo 90 <suporte@send.arquivo90.com.br>';
+const REPLY_TO = 'suporte@arquivo90.com.br';
 const SITE   = process.env.SITE_URL || 'https://arquivo90.com.br';
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -141,8 +142,9 @@ export async function sendOrderConfirmation(order) {
   `);
 
   return resend.emails.send({
-    from: FROM,
-    to:   order.customer_email,
+    from:     FROM,
+    reply_to: REPLY_TO,
+    to:       order.customer_email,
     subject: `Pedido confirmado — #${order.id.slice(0, 8).toUpperCase()}`,
     html
   });
@@ -189,8 +191,9 @@ export async function sendPaymentPending(order) {
   `);
 
   return resend.emails.send({
-    from: FROM,
-    to:   order.customer_email,
+    from:     FROM,
+    reply_to: REPLY_TO,
+    to:       order.customer_email,
     subject: `Pagamento pendente — #${order.id.slice(0, 8).toUpperCase()}`,
     html
   });
@@ -247,8 +250,9 @@ export async function sendOrderShipped(order) {
   `);
 
   return resend.emails.send({
-    from: FROM,
-    to:   order.customer_email,
+    from:     FROM,
+    reply_to: REPLY_TO,
+    to:       order.customer_email,
     subject: `Seu pedido foi despachado — #${order.id.slice(0, 8).toUpperCase()}`,
     html
   });
