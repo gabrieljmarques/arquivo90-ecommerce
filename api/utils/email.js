@@ -257,3 +257,59 @@ export async function sendOrderShipped(order) {
     html
   });
 }
+
+// ── 4. Abandoned cart ─────────────────────────────────────────────────────────
+
+export async function sendAbandonedCart(lead) {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const name  = lead.name?.split(' ')[0] || 'ei';
+  const items = Array.isArray(lead.cart) ? lead.cart : [];
+
+  const itemRows = items.map(i => `
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #222;">
+        <span style="display:block;font-size:14px;color:#e8e0d8;">${i.product_name || i.name || 'Produto'}</span>
+        <span style="display:block;font-size:12px;color:#6b6159;margin-top:2px;">${i.size}${i.color ? ' · ' + i.color : ''} · Qtd ${i.quantity}</span>
+      </td>
+      <td style="padding:10px 0;border-bottom:1px solid #222;text-align:right;font-size:14px;color:#e8e0d8;white-space:nowrap;">
+        ${fmt((i.unit_price || i.price || 0) * i.quantity)}
+      </td>
+    </tr>`).join('');
+
+  const html = layout(`
+    <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#e8e0d8;letter-spacing:0.04em;">Você esqueceu algo</h1>
+    <p style="margin:0 0 28px;font-size:14px;color:#a0978f;">Seus itens ainda estão te esperando</p>
+
+    <p style="margin:0 0 24px;font-size:14px;color:#e8e0d8;">Oi${name !== 'ei' ? ', <strong>' + name + '</strong>' : ''}. Você deixou alguns itens no carrinho — ainda dá tempo de garantir.</p>
+
+    ${items.length ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      <tr>
+        <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:0.08em;color:#6b6159;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid #333;">Produto</th>
+        <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:0.08em;color:#6b6159;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid #333;">Valor</th>
+      </tr>
+      ${itemRows}
+    </table>` : ''}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+      <tr><td align="center">
+        <a href="${SITE}/checkout" style="display:inline-block;background:#e8e0d8;color:#0a0a0a;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;padding:14px 36px;border-radius:4px;">
+          Finalizar compra
+        </a>
+      </td></tr>
+    </table>
+
+    <p style="margin:0;font-size:12px;color:#6b6159;line-height:1.6;text-align:center;">
+      O estoque é limitado — não garantimos disponibilidade por muito tempo.
+    </p>
+  `);
+
+  return resend.emails.send({
+    from:     FROM,
+    reply_to: REPLY_TO,
+    to:       lead.email,
+    subject:  `${name !== 'ei' ? name + ', o' : 'O'} seu carrinho ainda está aqui`,
+    html
+  });
+}

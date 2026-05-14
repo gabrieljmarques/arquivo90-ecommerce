@@ -1,5 +1,9 @@
 {
   "outputDirectory": "public",
+  "crons": [
+    { "path": "/api/cron/expire-reservations", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/abandoned-cart",      "schedule": "*/30 * * * *" }
+  ],
   "rewrites": [
     { "source": "/produto/:path*", "destination": "/produto/index.html" },
     { "source": "/checkout",       "destination": "/checkout/index.html" },

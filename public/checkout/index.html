@@ -393,6 +393,12 @@
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Email inválido', 'error'); return; }
       if (!phone) { toast('Informe seu WhatsApp', 'error'); return; }
       if (cpf.length !== 11) { toast('CPF inválido', 'error'); return; }
+      // Capture lead for abandoned cart (fire-and-forget)
+      fetch('/api/leads/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, cart: getCart() })
+      }).catch(() => {});
       goToStep(2);
     });
 

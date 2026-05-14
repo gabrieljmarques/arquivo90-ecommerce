@@ -87,6 +87,9 @@ async function processEvent(event) {
     // Confirmation email (non-blocking)
     sendOrderConfirmation(order).catch(err => console.error('sendOrderConfirmation failed:', err.message));
 
+    // Mark lead as converted so abandoned cart cron skips it
+    supabase.from('cart_leads').update({ converted: true }).eq('email', order.customer_email).catch(() => {});
+
     // Add to Melhor Envio cart (non-blocking — order is already confirmed)
     if (order?.shipping_service_id) {
       const productIds = [...new Set(orderItems.map(i => i.product_id))];
