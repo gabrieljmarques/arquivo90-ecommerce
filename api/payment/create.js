@@ -46,20 +46,29 @@ export default async function handler(req, res) {
   if (prodErr || products.length !== productIds.length) { res.status(400).json({ error: 'Um ou mais produtos não estão disponíveis' }); return; }
 
   const productMap = Object.fromEntries(products.map(p => [p.id, p]));
-  const reserved = [];
+  const reserved   = [];
+  const orderId    = crypto.randomUUID();
+  const expiresAt  = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
   for (const item of items) {
     if (!item.product_id || !item.size || !item.quantity || item.quantity < 1) {
-      await releaseAll(reserved); res.status(400).json({ error: 'Item inválido no carrinho' }); return;
+      await releaseAll(reserved, orderId); res.status(400).json({ error: 'Item inválido no carrinho' }); return;
     }
     const { data: ok, error: resErr } = await supabase.rpc('reserve_stock', {
       p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null
     });
     if (resErr || !ok) {
-      await releaseAll(reserved);
+      await releaseAll(reserved, orderId);
       res.status(409).json({ error: `Tamanho ${item.size} sem estoque disponível para "${productMap[item.product_id]?.name}"` }); return;
     }
     reserved.push({ p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null });
+
+    // Inserir reserva imediatamente — garante que o cron de expiração consegue limpar
+    // mesmo se o fluxo abortar mais adiante
+    await supabase.from('stock_reservations').insert({
+      order_id: orderId, product_id: item.product_id, size: item.size,
+      quantity: item.quantity, expires_at: expiresAt
+    }).catch(err => console.error('stock_reservations insert failed:', err.message));
   }
 
   const FLAT_RATE        = 2500;   // fallback sem ME configurado
@@ -89,7 +98,7 @@ export default async function handler(req, res) {
     });
     const row = Array.isArray(claimed) ? claimed[0] : claimed;
     if (!row) {
-      await releaseAll(reserved);
+      await releaseAll(reserved, orderId);
       res.status(400).json({ error: 'Cupom inválido, expirado ou esgotado' }); return;
     }
     claimedCoupon  = row;
@@ -99,7 +108,6 @@ export default async function handler(req, res) {
   }
 
   const total = subtotal + shippingCentavos - discountAmount;
-  const orderId  = crypto.randomUUID();
 
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId, idempotency_key, status: 'pending',
@@ -114,7 +122,7 @@ export default async function handler(req, res) {
   });
 
   if (orderErr) {
-    await releaseAll(reserved);
+    await releaseAll(reserved, orderId);
     if (claimedCoupon) await supabase.rpc('release_coupon', { p_code: claimedCoupon.code }).catch(() => {});
     console.error('order insert error:', orderErr.message);
     res.status(500).json({ error: 'Erro ao criar pedido' }); return;
@@ -123,11 +131,6 @@ export default async function handler(req, res) {
   await supabase.from('order_items').insert(items.map(i => ({
     order_id: orderId, product_id: i.product_id, product_name: productMap[i.product_id].name,
     size: i.size, color: i.color || null, quantity: i.quantity, unit_price: productMap[i.product_id].price
-  })));
-
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-  await supabase.from('stock_reservations').insert(items.map(i => ({
-    order_id: orderId, product_id: i.product_id, size: i.size, quantity: i.quantity, expires_at: expiresAt
   })));
 
   const mpClient   = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN, options: { timeout: 8000 } });
@@ -168,7 +171,7 @@ export default async function handler(req, res) {
     }});
   } catch (mpErr) {
     console.error('MP preference error:', mpErr.message);
-    await releaseAll(reserved);
+    await releaseAll(reserved, orderId);
     if (claimedCoupon) await supabase.rpc('release_coupon', { p_code: claimedCoupon.code }).catch(() => {});
     await supabase.from('orders').delete().eq('id', orderId);
     res.status(502).json({ error: 'Erro ao iniciar pagamento. Tente novamente.' }); return;
@@ -178,6 +181,12 @@ export default async function handler(req, res) {
   res.json({ init_point: pref.init_point, order_id: orderId });
 }
 
-async function releaseAll(reservations) {
-  for (const r of reservations) await supabase.rpc('release_stock', r).catch(() => {});
+async function releaseAll(reservations, orderId) {
+  for (const r of reservations) {
+    await supabase.rpc('release_stock', r).catch(err => console.error('release_stock failed:', err.message));
+  }
+  if (orderId) {
+    await supabase.from('stock_reservations').delete().eq('order_id', orderId)
+      .catch(err => console.error('delete stock_reservations failed:', err.message));
+  }
 }
