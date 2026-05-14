@@ -269,14 +269,26 @@ async function runProcessPayment(req, res) {
   if (prepared.error) {
     res.status(prepared.error.includes('estoque') ? 409 : 400).json({ error: prepared.error }); return;
   }
-  const { orderId, reserved, cleanCustomer, total, claimedCoupon } = prepared;
+  const { orderId, reserved, cleanCustomer, total, discountAmount, claimedCoupon } = prepared;
+
+  // PIX discount: 5% off
+  const isPix       = formData.payment_method_id === 'pix';
+  const pixDiscount = isPix ? Math.round(total * 0.05) : 0;
+  const finalTotal  = total - pixDiscount;
+
+  if (isPix && pixDiscount > 0) {
+    await supabase.from('orders').update({
+      total:           finalTotal,
+      discount_amount: discountAmount + pixDiscount
+    }).eq('id', orderId);
+  }
 
   const mpClient      = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN, options: { timeout: 12000 } });
   const paymentClient = new Payment(mpClient);
 
   // Build payment body
   const paymentBody = {
-    transaction_amount: +(total / 100).toFixed(2),
+    transaction_amount: +(finalTotal / 100).toFixed(2),
     payment_method_id:  formData.payment_method_id,
     payer: { email: formData.payer?.email || cleanCustomer.email },
     external_reference: orderId,

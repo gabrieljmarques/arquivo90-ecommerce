@@ -239,6 +239,11 @@
           <p class="payment-confirm__sub" id="confirm-sub"></p>
         </div>
 
+        <!-- PIX discount nudge -->
+        <p style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:#3a7c52;margin-bottom:1rem">
+          PIX · 5% de desconto aplicado automaticamente
+        </p>
+
         <!-- Bricks loading state -->
         <div class="bricks-loading" id="bricks-loading">
           <span class="spinner"></span> Carregando opções de pagamento...
@@ -396,9 +401,10 @@
         initialization: { amount: amountBRL },
         customization: {
           paymentMethods: {
-            creditCard: 'all',
-            debitCard:  'all',
-            ticket:     'all',   // PIX + boleto
+            creditCard:   'all',
+            debitCard:    'all',
+            bankTransfer: 'all', // PIX
+            ticket:       'all', // boleto
             maxInstallments: 12,
           },
           visual: {
