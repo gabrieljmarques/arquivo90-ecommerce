@@ -6,49 +6,248 @@
   <title>Pedido confirmado — Arquivo 90</title>
   <link rel="icon" href="/img/favicon.ico">
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .ty-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 9rem 1.5rem 6rem;
+    }
+
+    .ty-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 99px;
+      margin-bottom: 1.5rem;
+    }
+    .ty-badge--approved { background: #14532d; color: #4ade80; }
+    .ty-badge--pending  { background: #422006; color: #fb923c; }
+
+    .ty-title {
+      font-size: clamp(1.8rem, 5vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin: 0 0 0.75rem;
+    }
+
+    .ty-sub {
+      color: var(--ink-mid);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin: 0 0 2.5rem;
+    }
+
+    .ty-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .ty-card__label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      margin: 0 0 0.9rem;
+    }
+
+    .ty-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+    }
+    .ty-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .ty-item__name  { font-size: 0.9rem; margin: 0 0 0.2rem; }
+    .ty-item__meta  { font-size: 0.78rem; color: var(--ink-mid); margin: 0; }
+    .ty-item__price { font-size: 0.9rem; white-space: nowrap; flex-shrink: 0; }
+
+    .ty-totals { margin-top: 1rem; }
+    .ty-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+      color: var(--ink-mid);
+      padding: 0.3rem 0;
+    }
+    .ty-row--total {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      padding-top: 0.75rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .ty-row--free { color: var(--success, #4ade80); }
+
+    .ty-address {
+      font-size: 0.88rem;
+      color: var(--ink-mid);
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .ty-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .ty-pending-box {
+      background: #1a1200;
+      border: 1px solid #4a3500;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .ty-pending-box p { margin: 0; font-size: 0.88rem; color: #d4a017; line-height: 1.6; }
+    .ty-pending-box p + p { margin-top: 0.5rem; color: var(--ink-mid); }
+  </style>
 </head>
 <body>
   <nav class="nav scrolled">
     <a href="/" class="nav__brand">A R Q U I V O &nbsp; 9 0</a>
   </nav>
 
-  <div class="container--narrow" style="padding-top:10rem;padding-bottom:6rem;text-align:center">
+  <div class="ty-wrap">
     <div id="content">
       <div class="spinner" style="margin:0 auto 2rem"></div>
-      <p style="color:var(--ink-mid)">Verificando pagamento...</p>
+      <p style="color:var(--ink-mid);text-align:center">Carregando pedido...</p>
     </div>
   </div>
 
   <script type="module">
+    import { clearCart, fmt } from '/js/cart.js';
+
     const params  = new URLSearchParams(location.search);
     const orderId = params.get('order');
-    const status  = params.get('status'); // 'pendente' se MP retornou pending
+    const status  = params.get('status'); // 'pendente' para PIX/boleto aguardando
     const el      = document.getElementById('content');
 
-    if (!orderId) {
-      el.innerHTML = `
-        <h1 style="margin-bottom:1rem">Obrigado!</h1>
-        <p style="color:var(--ink-mid);margin-bottom:2rem">Seu pedido foi recebido. Em breve você receberá uma confirmação por email.</p>
-        <a href="/" class="btn">Ver mais produtos</a>`;
-      return;
+    function fmtAddress(a) {
+      if (!a) return '';
+      const line1 = [a.rua, a.numero, a.complemento].filter(Boolean).join(', ');
+      const line2 = [a.bairro, a.cidade + (a.estado ? '/' + a.estado : '')].filter(Boolean).join(' · ');
+      const line3 = 'CEP ' + (a.cep || '');
+      return [line1, line2, line3].filter(Boolean).join('<br>');
     }
 
-    if (status === 'pendente') {
+    function renderApproved(order) {
+      clearCart();
+      const items    = order.order_items || [];
+      const hasFrete = order.shipping_cost > 0;
+      const hasDesc  = order.discount_amount > 0;
+      const addr     = order.shipping_address;
+
+      const itemsHtml = items.map(i => `
+        <div class="ty-item">
+          <div>
+            <p class="ty-item__name">${i.product_name}</p>
+            <p class="ty-item__meta">${i.size}${i.color ? ' · ' + i.color : ''} · Qtd ${i.quantity}</p>
+          </div>
+          <span class="ty-item__price">${fmt(i.unit_price * i.quantity)}</span>
+        </div>`).join('');
+
+      const subtotal = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+
       el.innerHTML = `
-        <p class="badge" style="margin-bottom:1.5rem">Pagamento pendente</p>
-        <h1 style="margin-bottom:1rem">Quase lá</h1>
-        <p style="color:var(--ink-mid);margin-bottom:0.5rem">Seu pagamento está sendo processado.</p>
-        <p style="color:var(--ink-mid);margin-bottom:2rem;font-size:0.9rem">Pedido <span style="font-family:var(--font-sc)">#${orderId.slice(-8).toUpperCase()}</span></p>
-        <a href="/" class="btn">Voltar à loja</a>`;
-      return;
+        <span class="ty-badge ty-badge--approved">Pedido confirmado</span>
+        <h1 class="ty-title">Arquivo registrado.</h1>
+        <p class="ty-sub">
+          Pagamento aprovado. Você receberá a confirmação por email em <strong>${order.customer_email}</strong>.
+          <br>Pedido <strong>#${order.id.slice(-8).toUpperCase()}</strong>
+        </p>
+
+        ${items.length ? `
+        <div class="ty-card">
+          <p class="ty-card__label">Itens do pedido</p>
+          ${itemsHtml}
+          <div class="ty-totals">
+            <div class="ty-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+            ${hasFrete
+              ? `<div class="ty-row"><span>Frete${order.shipping_service_name ? ' · ' + order.shipping_service_name : ''}</span><span>${fmt(order.shipping_cost)}</span></div>`
+              : `<div class="ty-row ty-row--free"><span>Frete</span><span>Grátis</span></div>`}
+            ${hasDesc ? `<div class="ty-row"><span>Desconto${order.coupon_code ? ' (' + order.coupon_code + ')' : ''}</span><span style="color:var(--success,#4ade80)">− ${fmt(order.discount_amount)}</span></div>` : ''}
+            <div class="ty-row ty-row--total"><span>Total</span><span>${fmt(order.total)}</span></div>
+          </div>
+        </div>` : ''}
+
+        ${addr ? `
+        <div class="ty-card">
+          <p class="ty-card__label">Endereço de entrega</p>
+          <p class="ty-address">${fmtAddress(addr)}</p>
+          ${order.carrier || order.shipping_service_name ? `<p class="ty-address" style="margin-top:0.75rem;color:var(--ink)">${[order.carrier, order.shipping_service_name].filter(Boolean).join(' · ')}${order.shipping_deadline ? ' · ' + order.shipping_deadline : ''}</p>` : ''}
+        </div>` : ''}
+
+        <div class="ty-actions">
+          <a href="/" class="btn btn--primary">Ver mais produtos</a>
+        </div>`;
     }
 
-    el.innerHTML = `
-      <p class="badge" style="margin-bottom:1.5rem">Pedido confirmado</p>
-      <h1 style="margin-bottom:1rem">Arquivo registrado.</h1>
-      <p style="color:var(--ink-mid);margin-bottom:0.5rem">Pagamento aprovado. Você receberá a confirmação por email.</p>
-      <p style="color:var(--ink-mid);margin-bottom:2.5rem;font-size:0.9rem">Pedido <span style="font-family:var(--font-sc)">#${orderId.slice(-8).toUpperCase()}</span></p>
-      <a href="/" class="btn btn--primary">Ver mais produtos</a>`;
+    function renderPending(order) {
+      const addr = order?.shipping_address;
+      el.innerHTML = `
+        <span class="ty-badge ty-badge--pending">Aguardando pagamento</span>
+        <h1 class="ty-title">Quase lá.</h1>
+        <p class="ty-sub">
+          Recebemos seu pedido — só falta confirmar o pagamento.
+          <br>Pedido <strong>#${(order?.id || orderId || '').slice(-8).toUpperCase()}</strong>
+        </p>
+
+        <div class="ty-pending-box">
+          <p>Seu pagamento está sendo processado pelo banco.</p>
+          <p>Assim que confirmar, você receberá um email e o pedido será separado automaticamente.</p>
+        </div>
+
+        ${addr ? `
+        <div class="ty-card">
+          <p class="ty-card__label">Endereço de entrega</p>
+          <p class="ty-address">${fmtAddress(addr)}</p>
+        </div>` : ''}
+
+        <div class="ty-actions">
+          <a href="/" class="btn">Voltar à loja</a>
+        </div>`;
+    }
+
+    function renderError() {
+      el.innerHTML = `
+        <h1 class="ty-title" style="margin-bottom:1rem">Obrigado!</h1>
+        <p class="ty-sub">Seu pedido foi recebido. Em breve você receberá uma confirmação por email.</p>
+        <div class="ty-actions">
+          <a href="/" class="btn btn--primary">Ver mais produtos</a>
+        </div>`;
+    }
+
+    // ── Main ─────────────────────────────────────────────────────────────────
+
+    if (!orderId) { renderError(); }
+    else if (status === 'pendente') {
+      // Try to load order for address, but don't block on it
+      fetch(`/api/orders/${orderId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => renderPending(data?.order || null))
+        .catch(() => renderPending(null));
+    } else {
+      fetch(`/api/orders/${orderId}`)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => renderApproved(data.order))
+        .catch(() => {
+          // MP redirected here but order might still be processing — show generic
+          clearCart();
+          renderError();
+        });
+    }
   </script>
 </body>
 </html>
