@@ -6,8 +6,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'GET')     { res.status(405).end(); return; }
 
-  const id = req.query.id;
+  const id    = req.query.id;
+  const email = (req.query.email || '').toLowerCase().trim();
+
   if (!id || !UUID_RE.test(id)) { res.status(400).json({ error: 'ID inválido' }); return; }
+  if (!email)                   { res.status(400).json({ error: 'Email obrigatório' }); return; }
 
   const { data: order, error } = await supabase
     .from('orders')
@@ -23,6 +26,10 @@ export default async function handler(req, res) {
 
   if (error || !order) { res.status(404).json({ error: 'Pedido não encontrado' }); return; }
 
-  // Only expose safe fields — never return CPF, phone, full address details beyond display
+  // Ownership check — email must match (case-insensitive)
+  if (order.customer_email.toLowerCase() !== email) {
+    res.status(403).json({ error: 'Pedido não encontrado' }); return; // same message, no info leak
+  }
+
   res.json({ order });
 }

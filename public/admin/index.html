@@ -28,6 +28,15 @@
       </div>
       <button type="submit" class="btn btn--primary" id="btn-login">Entrar</button>
     </form>
+    <div style="text-align:center;margin-top:0.75rem">
+      <button id="btn-forgot" style="background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.08em;color:var(--ink-mid);text-decoration:underline">Esqueceu a senha?</button>
+    </div>
+    <!-- Forgot password form (hidden by default) -->
+    <div id="forgot-wrap" style="display:none;margin-top:1rem">
+      <input class="input" type="email" id="forgot-email" placeholder="Seu email" style="width:100%;box-sizing:border-box;margin-bottom:0.75rem">
+      <button class="btn btn--primary" id="btn-forgot-send" style="width:100%">Enviar link</button>
+      <p id="forgot-msg" style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.06em;margin-top:0.6rem;text-align:center"></p>
+    </div>
     <div style="display:flex;align-items:center;gap:1rem;margin-top:1.25rem">
       <hr style="flex:1;border:none;border-top:1px solid var(--border)">
       <span style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;color:var(--ink-mid)">OU</span>
@@ -318,6 +327,36 @@
       provider: 'google',
       options: { redirectTo: `${location.origin}/admin` }
     });
+  });
+
+  // ── Forgot password ───────────────────────────────────────────────────────
+  document.getElementById('btn-forgot').addEventListener('click', () => {
+    const wrap = document.getElementById('forgot-wrap');
+    wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+    if (wrap.style.display === 'block') {
+      document.getElementById('forgot-email').value =
+        document.getElementById('l-email').value; // pre-fill if already typed
+      document.getElementById('forgot-email').focus();
+    }
+  });
+
+  document.getElementById('btn-forgot-send').addEventListener('click', async () => {
+    const email = document.getElementById('forgot-email').value.trim();
+    const msg   = document.getElementById('forgot-msg');
+    const btn   = document.getElementById('btn-forgot-send');
+    if (!email) { msg.textContent = 'Informe seu email.'; msg.style.color = 'var(--error)'; return; }
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: `${location.origin}/reset-password`
+    });
+    btn.disabled = false; btn.textContent = 'Enviar link';
+    if (error) {
+      msg.textContent = 'Erro ao enviar. Tente novamente.';
+      msg.style.color = 'var(--error)';
+    } else {
+      msg.textContent = 'Link enviado! Verifique seu email.';
+      msg.style.color = 'var(--success, #2d6a4f)';
+    }
   });
 
   document.getElementById('btn-logout').addEventListener('click', async () => {

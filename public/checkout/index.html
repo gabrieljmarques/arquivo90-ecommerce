@@ -483,6 +483,9 @@
             injectPixBadge();
           },
           onSubmit: async ({ selectedPaymentMethod, formData }) => {
+            if (window._a90Submitting) return; // block double-submit
+            window._a90Submitting = true;
+
             const errBanner = document.getElementById('error-banner');
             errBanner.style.display = 'none';
 
@@ -525,8 +528,12 @@
               errBanner.textContent = err.message;
               errBanner.style.display = 'block';
               window.scrollTo({ top: 0, behavior: 'smooth' });
+              window._a90Submitting = false; // allow retry
               throw err; // Signal Bricks to show error state
             }
+
+            // Store email so /obrigado can verify order ownership
+            sessionStorage.setItem('a90_order_email', customer.email.toLowerCase());
 
             if (result.status === 'approved') {
               clearCart();
@@ -557,6 +564,7 @@
               errBanner2.textContent = msg;
               errBanner2.style.display = 'block';
               window.scrollTo({ top: 0, behavior: 'smooth' });
+              window._a90Submitting = false; // allow retry with different card
               throw new Error(msg);
             }
           },

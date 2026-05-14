@@ -167,6 +167,9 @@
     const status  = params.get('status'); // 'pendente' para PIX/boleto aguardando
     const el      = document.getElementById('content');
 
+    // Email stored by checkout for ownership verification
+    const orderEmail = sessionStorage.getItem('a90_order_email') || '';
+
     function fmtAddress(a) {
       if (!a) return '';
       const line1 = [a.rua, a.numero, a.complemento].filter(Boolean).join(', ');
@@ -304,19 +307,22 @@
 
     // ── Main ─────────────────────────────────────────────────────────────────
 
+    function orderUrl(id) {
+      const q = orderEmail ? `?email=${encodeURIComponent(orderEmail)}` : '';
+      return `/api/orders/${id}${q}`;
+    }
+
     if (!orderId) { renderError(); }
     else if (status === 'pendente') {
-      // Try to load order for address, but don't block on it
-      fetch(`/api/orders/${orderId}`)
+      fetch(orderUrl(orderId))
         .then(r => r.ok ? r.json() : null)
         .then(data => renderPending(data?.order || null))
         .catch(() => renderPending(null));
     } else {
-      fetch(`/api/orders/${orderId}`)
+      fetch(orderUrl(orderId))
         .then(r => r.ok ? r.json() : Promise.reject())
         .then(data => renderApproved(data.order))
         .catch(() => {
-          // MP redirected here but order might still be processing — show generic
           clearCart();
           renderError();
         });
