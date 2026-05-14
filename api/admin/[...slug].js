@@ -1,5 +1,6 @@
 import { getSupabase }          from '../utils/supabase.js';
 import { verifyAdmin, logAudit } from '../utils/auth.js';
+import { sendOrderShipped }      from '../utils/email.js';
 
 const VALID_STATUSES = ['pending','paid','preparing','shipped','delivered','cancelled','refunded'];
 const PAGE_SIZE      = 25;
@@ -267,6 +268,14 @@ export default async function handler(req, res) {
           await supabase.rpc('release_stock', { p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null }).catch(() => {});
         }
         await supabase.from('stock_reservations').delete().eq('order_id', id);
+      }
+
+      // Shipped email — only on first transition to 'shipped'
+      if (updates.status === 'shipped' && before.status !== 'shipped') {
+        const { data: fullOrder } = await supabase.from('orders')
+          .select('*, order_items(product_id, product_name, size, color, quantity, unit_price)')
+          .eq('id', id).single();
+        if (fullOrder) sendOrderShipped(fullOrder).catch(err => console.error('sendOrderShipped failed:', err.message));
       }
 
       await logAudit(supabase, { adminEmail: user.email, action: 'update_order', entity: 'order', entityId: id, before, after });

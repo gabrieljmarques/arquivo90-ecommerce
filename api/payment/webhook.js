@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
-import { supabase }       from '../utils/supabase.js';
-import { addToMECart }    from '../shipping/me-cart.js';
+import { supabase }                   from '../utils/supabase.js';
+import { addToMECart }                from '../shipping/me-cart.js';
+import { sendOrderConfirmation, sendPaymentPending } from '../utils/email.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
@@ -83,6 +84,9 @@ async function processEvent(event) {
       });
     }
 
+    // Confirmation email (non-blocking)
+    sendOrderConfirmation(order).catch(err => console.error('sendOrderConfirmation failed:', err.message));
+
     // Add to Melhor Envio cart (non-blocking — order is already confirmed)
     if (order?.shipping_service_id) {
       const productIds = [...new Set(orderItems.map(i => i.product_id))];
@@ -98,6 +102,13 @@ async function processEvent(event) {
         await supabase.from('orders').update({ me_order_id: meOrderId }).eq('id', orderId);
       }
     }
+  } else if (payment.status === 'pending') {
+    // PIX / boleto — payment not yet confirmed
+    const { data: order } = await supabase.from('orders')
+      .select('*, order_items(product_id, product_name, size, color, quantity, unit_price)')
+      .eq('id', orderId).single();
+    if (order) sendPaymentPending(order).catch(err => console.error('sendPaymentPending failed:', err.message));
+
   } else if (['rejected', 'cancelled'].includes(payment.status)) {
     await supabase.rpc('release_stock_for_order', { p_order_id: orderId });
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId).eq('status', 'pending');
