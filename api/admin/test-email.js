@@ -47,10 +47,21 @@ export default async function handler(req, res) {
   const order = { ...MOCK_ORDER, customer_email: to };
 
   try {
-    if (type === 'confirmation') await sendOrderConfirmation(order);
-    if (type === 'pending')      await sendPaymentPending(order);
-    if (type === 'shipped')      await sendOrderShipped(order);
-    res.json({ ok: true, sent_to: to, type });
+    let result;
+    if (type === 'confirmation') result = await sendOrderConfirmation(order);
+    if (type === 'pending')      result = await sendPaymentPending(order);
+    if (type === 'shipped')      result = await sendOrderShipped(order);
+
+    // Surface Resend response for debugging
+    const resendData  = result?.data  ?? null;
+    const resendError = result?.error ?? null;
+    console.log('Resend result:', JSON.stringify(result));
+
+    if (resendError) {
+      return res.status(500).json({ error: 'Resend error', detail: resendError });
+    }
+
+    res.json({ ok: true, sent_to: to, type, resend_id: resendData?.id ?? null });
   } catch (err) {
     console.error('test-email error:', err.message);
     res.status(500).json({ error: err.message });
