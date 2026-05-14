@@ -35,9 +35,10 @@ export default async function handler(req, res) {
     res.json({
       settings,
       supabaseUrl:     process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      mpPublicKey:     process.env.MP_PUBLIC_KEY
     });
   } catch {
-    res.json({ settings: DEFAULTS });
+    res.json({ settings: DEFAULTS, mpPublicKey: process.env.MP_PUBLIC_KEY });
   }
 }

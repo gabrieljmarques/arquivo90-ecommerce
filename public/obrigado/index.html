@@ -112,6 +112,32 @@
     }
     .ty-pending-box p { margin: 0; font-size: 0.88rem; color: #d4a017; line-height: 1.6; }
     .ty-pending-box p + p { margin-top: 0.5rem; color: var(--ink-mid); }
+
+    .ty-pix {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .ty-pix__label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-mid); margin: 0 0 1rem;
+    }
+    .ty-pix__qr {
+      width: 180px; height: 180px; margin: 0 auto 1rem;
+      background: #fff; padding: 8px; border-radius: 4px; display: block;
+    }
+    .ty-pix__code {
+      font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.04em;
+      color: var(--ink-mid); word-break: break-all;
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 0.6rem 0.8rem; border-radius: 4px; margin: 0 0 0.75rem;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .ty-pix__code:hover { border-color: var(--ink); }
+    .ty-pix__copy { font-size: 0.72rem; color: var(--ink-mid); }
   </style>
 </head>
 <body>
@@ -195,7 +221,25 @@
     }
 
     function renderPending(order) {
-      const addr = order?.shipping_address;
+      const addr    = order?.shipping_address;
+      const pixData = (() => {
+        try {
+          const d = JSON.parse(sessionStorage.getItem('pix_data') || 'null');
+          if (d?.order_id === orderId) { sessionStorage.removeItem('pix_data'); return d; }
+        } catch {}
+        return null;
+      })();
+
+      const pixBlock = pixData?.qr_code ? `
+        <div class="ty-pix">
+          <p class="ty-pix__label">PIX — escaneie ou copie o código</p>
+          ${pixData.qr_code_base64
+            ? `<img class="ty-pix__qr" src="data:image/png;base64,${pixData.qr_code_base64}" alt="QR Code PIX">`
+            : ''}
+          <pre class="ty-pix__code" id="pix-code" title="Clique para copiar">${pixData.qr_code}</pre>
+          <p class="ty-pix__copy" id="pix-copy-msg">Clique no código para copiar</p>
+        </div>` : '';
+
       el.innerHTML = `
         <span class="ty-badge ty-badge--pending">Aguardando pagamento</span>
         <h1 class="ty-title">Quase lá.</h1>
@@ -204,10 +248,11 @@
           <br>Pedido <strong>#${(order?.id || orderId || '').slice(-8).toUpperCase()}</strong>
         </p>
 
+        ${pixBlock || `
         <div class="ty-pending-box">
           <p>Seu pagamento está sendo processado pelo banco.</p>
           <p>Assim que confirmar, você receberá um email e o pedido será separado automaticamente.</p>
-        </div>
+        </div>`}
 
         ${addr ? `
         <div class="ty-card">
@@ -218,6 +263,17 @@
         <div class="ty-actions">
           <a href="/" class="btn">Voltar à loja</a>
         </div>`;
+
+      // PIX copy to clipboard
+      if (pixData?.qr_code) {
+        document.getElementById('pix-code')?.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(pixData.qr_code);
+            const msg = document.getElementById('pix-copy-msg');
+            if (msg) { msg.textContent = '✓ Código copiado!'; msg.style.color = '#3a7c52'; }
+          } catch {}
+        });
+      }
     }
 
     function renderError() {
