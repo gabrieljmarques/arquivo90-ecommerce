@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout — Arquivo 90</title>
-  <link rel="icon" href="/img/favicon.ico">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
   <link rel="stylesheet" href="/css/style.css">
   <style>
     /* ── Checkout nav ── */
@@ -15,7 +15,11 @@
     .checkout-nav__brand { font-family: var(--font-sc); letter-spacing: 0.2em; font-size: 0.78rem; color: var(--ink); text-decoration: none; justify-self: center; }
     .checkout-nav__secure { display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end; color: var(--ink-faint); font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.1em; }
     .checkout-nav__secure svg { width: 11px; height: 11px; flex-shrink: 0; }
-    @media (max-width: 600px) { .checkout-nav__secure span { display: none; } }
+    @media (max-width: 600px) {
+      .checkout-nav__secure span { display: none; }
+      .checkout-nav__back span   { display: none; }
+      .checkout-nav { padding: 0 1rem; }
+    }
 
     .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 4rem; padding-top: 6.5rem; padding-bottom: 5rem; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
