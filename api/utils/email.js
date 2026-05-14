@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM     = 'Arquivo 90 <suporte@send.arquivo90.com.br>';
+const FROM     = 'Arquivo 90 <suporte@arquivo90.com.br>';
 const REPLY_TO = 'suporte@arquivo90.com.br';
 const SITE   = process.env.SITE_URL || 'https://arquivo90.com.br';
 
