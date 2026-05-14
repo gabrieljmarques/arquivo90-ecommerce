@@ -65,10 +65,12 @@ export default async function handler(req, res) {
 
     // Inserir reserva imediatamente — garante que o cron de expiração consegue limpar
     // mesmo se o fluxo abortar mais adiante
-    await supabase.from('stock_reservations').insert({
-      order_id: orderId, product_id: item.product_id, size: item.size,
-      quantity: item.quantity, expires_at: expiresAt
-    }).catch(err => console.error('stock_reservations insert failed:', err.message));
+    try {
+      await supabase.from('stock_reservations').insert({
+        order_id: orderId, product_id: item.product_id, size: item.size,
+        quantity: item.quantity, expires_at: expiresAt
+      });
+    } catch (err) { console.error('stock_reservations insert failed:', err.message); }
   }
 
   const FLAT_RATE        = 2500;   // fallback sem ME configurado
@@ -184,10 +186,11 @@ export default async function handler(req, res) {
 
 async function releaseAll(reservations, orderId) {
   for (const r of reservations) {
-    await supabase.rpc('release_stock', r).catch(err => console.error('release_stock failed:', err.message));
+    try { await supabase.rpc('release_stock', r); }
+    catch (err) { console.error('release_stock failed:', err.message); }
   }
   if (orderId) {
-    await supabase.from('stock_reservations').delete().eq('order_id', orderId)
-      .catch(err => console.error('delete stock_reservations failed:', err.message));
+    try { await supabase.from('stock_reservations').delete().eq('order_id', orderId); }
+    catch (err) { console.error('delete stock_reservations failed:', err.message); }
   }
 }
