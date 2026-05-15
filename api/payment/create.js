@@ -42,7 +42,8 @@ function validateCommon(body) {
 }
 
 // Reserve stock, create order, return prepared data or { error }
-async function prepareOrder(body) {
+// paymentMethodId is passed explicitly so the PIX discount is burned into the INSERT
+async function prepareOrder(body, paymentMethodId) {
   const { items, customer, shipping_address, shipping_service, idempotency_key, coupon_code } = body;
 
   const cleanCustomer = {
@@ -113,7 +114,11 @@ async function prepareOrder(body) {
       : Math.min(row.value, subtotal);
   }
 
-  const total = subtotal + shippingCentavos - discountAmount;
+  // PIX 5% discount applied here so the INSERT total matches what MP will charge
+  const isPix       = paymentMethodId === 'pix';
+  const pixDiscount = isPix ? Math.round((subtotal + shippingCentavos - discountAmount) * 0.05) : 0;
+  const total       = subtotal + shippingCentavos - discountAmount - pixDiscount;
+  const totalDiscount = discountAmount + pixDiscount;
 
   const { error: orderErr } = await supabase.from('orders').insert({
     id: orderId, idempotency_key, status: 'pending',
@@ -126,7 +131,7 @@ async function prepareOrder(body) {
     carrier:               shipping_service?.company ?? null,
     shipping_deadline:     shipping_service?.delivery_time ?? null,
     coupon_code:     claimedCoupon?.code ?? null,
-    discount_amount: discountAmount
+    discount_amount: totalDiscount
   });
 
   if (orderErr) {
@@ -141,7 +146,7 @@ async function prepareOrder(body) {
     size: i.size, color: i.color || null, quantity: i.quantity, unit_price: productMap[i.product_id].price
   })));
 
-  return { orderId, reserved, cleanCustomer, productMap, total, shippingCentavos, discountAmount, claimedCoupon, items };
+  return { orderId, reserved, cleanCustomer, productMap, total, shippingCentavos, discountAmount: totalDiscount, pixDiscount, claimedCoupon, items };
 }
 
 // ── Stock confirmation helpers ─────────────────────────────────────────────────
@@ -265,23 +270,13 @@ async function runProcessPayment(req, res) {
   const validErr = validateCommon(req.body);
   if (validErr) { res.status(400).json({ error: validErr }); return; }
 
-  const prepared = await prepareOrder(req.body);
+  const prepared = await prepareOrder(req.body, formData.payment_method_id);
   if (prepared.error) {
     res.status(prepared.error.includes('estoque') ? 409 : 400).json({ error: prepared.error }); return;
   }
-  const { orderId, reserved, cleanCustomer, total, discountAmount, claimedCoupon } = prepared;
-
-  // PIX discount: 5% off
-  const isPix       = formData.payment_method_id === 'pix';
-  const pixDiscount = isPix ? Math.round(total * 0.05) : 0;
-  const finalTotal  = total - pixDiscount;
-
-  if (isPix && pixDiscount > 0) {
-    await supabase.from('orders').update({
-      total:           finalTotal,
-      discount_amount: discountAmount + pixDiscount
-    }).eq('id', orderId);
-  }
+  // total already reflects PIX discount (calculated inside prepareOrder and stored in the INSERT)
+  const { orderId, reserved, cleanCustomer, total, claimedCoupon } = prepared;
+  const finalTotal = total;
 
   const mpClient      = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN, options: { timeout: 12000 } });
   const paymentClient = new Payment(mpClient);

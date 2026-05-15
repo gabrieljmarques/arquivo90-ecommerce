@@ -16,7 +16,13 @@ export default async function handler(req, res) {
   const xRequestId = req.headers['x-request-id'] || '';
   const dataId     = req.query['data.id'] || req.query['id'] || '';
 
-  if (process.env.MP_WEBHOOK_SECRET && xSignature) {
+  // MP_WEBHOOK_SECRET is mandatory — reject if not configured
+  if (!process.env.MP_WEBHOOK_SECRET) {
+    console.error('SECURITY: MP_WEBHOOK_SECRET not set — webhook rejected');
+    res.status(401).end(); return;
+  }
+
+  if (xSignature) {
     const parts = Object.fromEntries(
       xSignature.split(',').map(p => { const [k, ...v] = p.split('='); return [k.trim(), v.join('=').trim()]; })
     );
@@ -24,10 +30,15 @@ export default async function handler(req, res) {
     const v1 = parts['v1'] || '';
     const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
     const expected = crypto.createHmac('sha256', process.env.MP_WEBHOOK_SECRET).update(manifest).digest('hex');
-    const expBuf = Buffer.from(expected);
-    const recBuf = Buffer.alloc(expBuf.length);
-    Buffer.from(v1).copy(recBuf);
-    if (!crypto.timingSafeEqual(expBuf, recBuf)) { console.warn('webhook signature mismatch'); res.status(401).end(); return; }
+    // Convert hex→binary before comparing (fixes length-mismatch bypass)
+    const expBuf = Buffer.from(expected, 'hex');
+    const recBuf = v1.length === expected.length
+      ? Buffer.from(v1, 'hex')
+      : Buffer.alloc(expBuf.length); // wrong length → zeroed buffer → always fails
+    if (!crypto.timingSafeEqual(expBuf, recBuf)) {
+      console.warn('webhook signature mismatch');
+      res.status(401).end(); return;
+    }
   }
 
   const payload = req.body;

@@ -266,13 +266,19 @@ export default async function handler(req, res) {
       const { data: after, error } = await supabase.from('orders').update(updates).eq('id', id).select().single();
       if (error) { res.status(500).json({ error: error.message }); return; }
 
-      const CANCEL_STATUSES = ['cancelled','refunded'];
-      if (updates.status && CANCEL_STATUSES.includes(updates.status) && !CANCEL_STATUSES.includes(before.status)) {
-        const { data: items } = await supabase.from('order_items').select('product_id, size, color, quantity').eq('order_id', id);
-        for (const item of (items || [])) {
-          await supabase.rpc('release_stock', { p_product_id: item.product_id, p_size: item.size, p_quantity: item.quantity, p_color: item.color || null }).catch(() => {});
+      // Stock adjustment on status change — only once (guard: before not already in terminal state)
+      const TERMINAL_STATUSES = ['cancelled','refunded'];
+      if (updates.status && TERMINAL_STATUSES.includes(updates.status) && !TERMINAL_STATUSES.includes(before.status)) {
+        if (updates.status === 'refunded') {
+          // Order was already paid/confirmed → restore physical stock
+          await supabase.rpc('refund_stock_for_order', { p_order_id: id }).catch(err =>
+            console.error('refund_stock_for_order failed:', err.message));
+        } else {
+          // Order was cancelled before confirmation → release reservations
+          await supabase.rpc('release_stock_for_order', { p_order_id: id }).catch(err =>
+            console.error('release_stock_for_order failed:', err.message));
+          await supabase.from('stock_reservations').delete().eq('order_id', id);
         }
-        await supabase.from('stock_reservations').delete().eq('order_id', id);
       }
 
       // Shipped email — only on first transition to 'shipped'
