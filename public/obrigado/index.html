@@ -278,6 +278,29 @@
           <a href="/" class="btn">Voltar à loja</a>
         </div>`;
 
+      // Auto-refresh: poll order status every 30s until paid
+      let _pollTimer = null;
+      let _pollCount = 0;
+      const MAX_POLLS = 20; // 10 minutes
+
+      function startPolling(id) {
+        _pollTimer = setInterval(async () => {
+          _pollCount++;
+          if (_pollCount > MAX_POLLS) { clearInterval(_pollTimer); return; }
+          try {
+            const r = await fetch(orderUrl(id));
+            if (!r.ok) return;
+            const { order } = await r.json();
+            if (order?.status === 'paid') {
+              clearInterval(_pollTimer);
+              renderApproved(order);
+            }
+          } catch {}
+        }, 30_000);
+      }
+
+      startPolling(orderId);
+
       // PIX copy to clipboard
       if (pixData?.qr_code) {
         document.getElementById('pix-copy-btn')?.addEventListener('click', async () => {

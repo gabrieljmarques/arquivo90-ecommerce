@@ -1,12 +1,17 @@
 import { getSupabase }          from '../utils/supabase.js';
 import { verifyAdmin, logAudit } from '../utils/auth.js';
 import { sendOrderShipped }      from '../utils/email.js';
+import { rateLimit, getClientIp } from '../utils/ratelimit.js';
 
 const VALID_STATUSES = ['pending','paid','preparing','shipped','delivered','cancelled','refunded'];
 const PAGE_SIZE      = 25;
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+
+  const ip      = getClientIp(req);
+  const allowed = await rateLimit(`admin:${ip}`, 200, 60);
+  if (!allowed) { res.status(429).json({ error: 'Muitas requisições' }); return; }
 
   const supabase = getSupabase();
   const user = await verifyAdmin(req);

@@ -2,10 +2,15 @@ import crypto from 'crypto';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { supabase }                   from '../utils/supabase.js';
 import { addToMECart }                from '../shipping/me-cart.js';
-import { sendOrderConfirmation, sendPaymentPending } from '../utils/email.js';
+import { sendOrderConfirmation, sendPaymentPending, sendPaymentRejected } from '../utils/email.js';
+import { rateLimit, getClientIp }     from '../utils/ratelimit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.status(405).end(); return; }
+
+  const ip      = getClientIp(req);
+  const allowed = await rateLimit(`webhook:${ip}`, 30, 60);
+  if (!allowed) { res.status(429).end(); return; }
 
   const xSignature = req.headers['x-signature']  || '';
   const xRequestId = req.headers['x-request-id'] || '';
@@ -115,6 +120,9 @@ async function processEvent(event) {
   } else if (['rejected', 'cancelled'].includes(payment.status)) {
     await supabase.rpc('release_stock_for_order', { p_order_id: orderId });
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId).eq('status', 'pending');
+    const { data: rejOrder } = await supabase.from('orders')
+      .select('*, order_items(*)').eq('id', orderId).maybeSingle();
+    if (rejOrder) sendPaymentRejected(rejOrder).catch(e => console.error('sendPaymentRejected failed:', e.message));
   }
 
   await supabase.from('webhook_events').update({

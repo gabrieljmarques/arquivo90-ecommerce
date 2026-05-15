@@ -258,7 +258,43 @@ export async function sendOrderShipped(order) {
   });
 }
 
-// ── 4. Abandoned cart ─────────────────────────────────────────────────────────
+// ── 4. Payment rejected ──────────────────────────────────────────────────────
+
+export async function sendPaymentRejected(order) {
+  if (!process.env.RESEND_API_KEY) return;
+
+  const html = layout(`
+    <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#e8e0d8;letter-spacing:0.04em;">Pagamento não aprovado</h1>
+    <p style="margin:0 0 28px;font-size:14px;color:#a0978f;">Pedido #${order.id.slice(0, 8).toUpperCase()}</p>
+
+    <p style="margin:0 0 16px;font-size:14px;color:#e8e0d8;">Oi, <strong>${order.customer_name?.split(' ')[0]}</strong>. Infelizmente seu pagamento não foi aprovado.</p>
+
+    <div style="background:#1a0a0a;border:1px solid #4a1a1a;border-radius:6px;padding:16px 20px;margin-bottom:28px;">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:0.08em;color:#c0392b;text-transform:uppercase;">Pagamento recusado</p>
+      <p style="margin:0;font-size:13px;color:#a0978f;line-height:1.6;">
+        O estoque reservado foi liberado automaticamente. Você pode tentar novamente com outro cartão ou usar o PIX (5% de desconto).
+      </p>
+    </div>
+
+    <a href="${SITE}/checkout" style="display:inline-block;background:#e8e0d8;color:#0a0a0a;font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:12px 28px;text-decoration:none;margin-bottom:28px;">
+      Tentar novamente
+    </a>
+
+    <p style="margin:0;font-size:13px;color:#6b6159;line-height:1.6;">
+      Dúvidas? Responda esse email.
+    </p>
+  `);
+
+  return resend.emails.send({
+    from:     FROM,
+    reply_to: REPLY_TO,
+    to:       order.customer_email,
+    subject:  `Pagamento não aprovado — #${order.id.slice(0, 8).toUpperCase()}`,
+    html
+  });
+}
+
+// ── 5. Abandoned cart ─────────────────────────────────────────────────────────
 
 export async function sendAbandonedCart(lead) {
   if (!process.env.RESEND_API_KEY) return;

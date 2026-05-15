@@ -325,8 +325,9 @@
         <div style="margin-bottom:2rem">
           <p class="info__section-label">Tamanho</p>
           <div class="size-selector" id="size-selector">
-            ${sizes.map(s => `<button class="size-btn" data-size="${s.size}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`).join('')}
+            ${sizes.map(s => `<button class="size-btn" data-size="${s.size}" data-available="${s.available}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`).join('')}
           </div>
+          <p id="stock-warn" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;margin-top:0.6rem;min-height:1em"></p>
           ${isEsgotado ? '<p style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--error);margin-top:0.75rem">Esgotado</p>' : ''}
         </div>`;
 
@@ -468,13 +469,19 @@ ${sizes.length ? colorSelectorHtml : ''}
         const sel = document.getElementById('size-selector');
         if (!sel) return;
         sel.innerHTML = colorSizes.map(s =>
-          `<button class="size-btn" data-size="${s.size}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`
+          `<button class="size-btn" data-size="${s.size}" data-available="${s.available}" ${s.available === 0 ? 'disabled' : ''}>${s.size}</button>`
         ).join('');
         sel.querySelectorAll('.size-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             sel.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             selectedSize = btn.dataset.size;
+            const warn = document.getElementById('stock-warn');
+            if (warn) {
+              const avail = parseInt(btn.dataset.available || '99', 10);
+              warn.textContent = avail > 0 && avail <= 5 ? `Apenas ${avail} unidade${avail > 1 ? 's' : ''} disponível${avail > 1 ? 'is' : ''}` : '';
+              warn.style.color = avail <= 3 ? 'var(--error,#c0392b)' : 'var(--ink-mid)';
+            }
           });
         });
         selectedSize = null;

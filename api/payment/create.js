@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { supabase }               from '../utils/supabase.js';
 import { rateLimit, getClientIp } from '../utils/ratelimit.js';
-import { sendOrderConfirmation, sendPaymentPending } from '../utils/email.js';
+import { sendOrderConfirmation, sendPaymentPending, sendPaymentRejected } from '../utils/email.js';
 
 const EMAIL_RE       = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UUID_RE        = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -351,6 +351,9 @@ async function runProcessPayment(req, res) {
     await releaseAll(reserved, orderId);
     if (claimedCoupon) await supabase.rpc('release_coupon', { p_code: claimedCoupon.code }).catch(() => {});
     await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId).eq('status', 'pending');
+    const { data: rejOrder } = await supabase.from('orders')
+      .select('*, order_items(*)').eq('id', orderId).maybeSingle();
+    if (rejOrder) sendPaymentRejected(rejOrder).catch(e => console.error('sendPaymentRejected failed:', e.message));
     res.json({ status: 'rejected', reason: payment.status_detail || 'rejected', order_id: orderId });
   }
 }
